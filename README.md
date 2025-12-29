@@ -29,8 +29,8 @@ CONFIG_INPUT_TPS43=y
 &i2c0 {
     status = "okay";
     clock-frequency = <I2C_BITRATE_FAST>;
-    pinctrl-0 = <&i2c0_azoteq_default>;
-    pinctrl-1 = <&i2c0_azoteq_sleep>;
+    pinctrl-0 = <&i2c0_default>;  /* конфигурация для SDA и SCL */
+    pinctrl-1 = <&i2c0_sleep>;    /* конфигурация для SDA и SCL */
     pinctrl-names = "default", "sleep";
 
     tps43_trackpad: trackpad@74 {
@@ -39,18 +39,21 @@ CONFIG_INPUT_TPS43=y
         status = "okay";
         
         /* GPIO connections */
-        rdy-gpios = <&pro_micro 21 GPIO_ACTIVE_HIGH>;  /* Ready pin */
-        rst-gpios = <&pro_micro 20 GPIO_ACTIVE_HIGH>;  /* Reset pin */
+        rdy-gpios = <&pro_micro 21 GPIO_ACTIVE_HIGH>;  /* RDY пин */
+        rst-gpios = <&pro_micro 20 GPIO_ACTIVE_HIGH>;  /* RST пин */
 
         enable-power-management;
         
-        sensitivity = <110>;           /* 100% = normal */
-        scroll-sensitivity = <15>;     /* 50% = normal */
+        sensitivity = <110>;           /* 100% = нормальное состояние */
+        scroll-sensitivity = <10>;     /* 50% = нормальное состояние */
+
+        filter-settings=<0x0B>;        /* описание фильтра смотрите в `доступных настройках` */
 
         scroll;
         two-finger-tap;
         single-tap;
         press-and-hold;
+        swipes;
 
         switch-xy;
         invert-scroll-y;
