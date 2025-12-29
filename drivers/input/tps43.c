@@ -141,10 +141,10 @@ static int tps43_i2c_read_reg8_w_err(const struct device *dev, uint16_t reg, uin
     
     ret = i2c_write_read_dt(&config->i2c_bus, reg_buf, sizeof(reg_buf), val, 1);
     if (ret != 0) {
-        if (with_err) {
-            LOG_ERR("Ошибка чтения регистра 0x%04x: %d", reg, ret);
-        } else {
+        if (!with_err) {
             LOG_INF("Ожидаемое завершение чтение регистра 0x%04x: %d", reg, ret);
+        } else {
+            LOG_ERR("Ошибка чтения регистра 0x%04x: %d", reg, ret);
         }
         return ret;
     }
