@@ -1,13 +1,13 @@
 /**
 * @file tps43_idle_sleeper.c
-* @brief Интеграция управления питанием тачпада TPS43 с системой управления питанием ZMK
+* @brief Integration of TPS43 trackpad power management with ZMK power management system
 * 
-* Этот модуль подписывается на события изменения состояния активности ZMK и автоматически
-* переводит тачпад в режим сна при переходе клавиатуры в состояние idle/sleep, что позволяет
-* значительно снизить энергопотребление.
+* This module subscribes to ZMK activity state change events and automatically
+* puts the trackpad into sleep mode when the keyboard transitions to idle/sleep state,
+* which significantly reduces power consumption.
 * 
-* Работает совместно с автоматическим управлением питанием в основном драйвере (tps43.c),
-* которое отслеживает время бездействия тачпада.
+* Works in conjunction with automatic power management in the main driver (tps43.c),
+* which monitors trackpad idle time.
 */
 
 #include <zephyr/device.h>
@@ -20,53 +20,53 @@
 LOG_MODULE_REGISTER(tps43_sleeper, CONFIG_INPUT_LOG_LEVEL);
 
 /**
-* @brief Макрос для получения указателя на устройство из devicetree
+* @brief Macro to get device pointer from devicetree
 */
 #define GET_TPS43_DEV(node_id) DEVICE_DT_GET(node_id),
 
 /**
-* @brief Массив указателей на все устройства TPS43 в системе
+* @brief Array of pointers to all TPS43 devices in the system
 * 
-* Автоматически заполняется из devicetree для всех устройств с совместимостью azoteq_tps43
+* Automatically populated from devicetree for all devices with azoteq_tps43 compatibility
 */
 static const struct device *tps43_devs[] = {DT_FOREACH_STATUS_OKAY(azoteq_tps43, GET_TPS43_DEV)};
 
 /**
-* @brief Обработчик события изменения состояния активности ZMK
+* @brief Handler for ZMK activity state change event
 * 
-* Эта функция вызывается при изменении состояния активности клавиатуры:
-* - ZMK_ACTIVITY_ACTIVE - клавиатура активна, тачпад должен быть пробужден
-* - ZMK_ACTIVITY_IDLE - клавиатура в режиме ожидания, тачпад переводится в sleep
-* - ZMK_ACTIVITY_SLEEP - клавиатура в режиме сна, тачпад переводится в sleep
+* This function is called when the keyboard activity state changes:
+* - ZMK_ACTIVITY_ACTIVE - keyboard is active, trackpad should be awakened
+* - ZMK_ACTIVITY_IDLE - keyboard is idle, trackpad is put to sleep
+* - ZMK_ACTIVITY_SLEEP - keyboard is sleeping, trackpad is put to sleep
 * 
-* @param eh Указатель на событие изменения состояния активности
-* @return 0 при успешной обработке
+* @param eh Pointer to activity state change event
+* @return 0 on successful handling
 */
 static int on_activity_state(const zmk_event_t *eh) {
     const struct zmk_activity_state_changed *state_ev = as_zmk_activity_state_changed(eh);
     if (!state_ev) {
-        LOG_WRN("Событие не найдено, игнорируем");
+        LOG_WRN("Event not found, ignoring");
         return 0;
     }
 
-    /* Переводим тачпад в sleep если состояние не ACTIVE, иначе пробуждаем */
+    /* Put trackpad to sleep if state is not ACTIVE, otherwise wake it up */
     bool should_sleep = (state_ev->state != ZMK_ACTIVITY_ACTIVE);
     
-    LOG_INF("Изменение состояния активности ZMK: %d -> тачпад %s", 
+    LOG_INF("ZMK activity state change: %d -> trackpad %s", 
             state_ev->state, should_sleep ? "sleep" : "active");
     
-    // Применяем изменение ко всем устройствам TPS43 в системе
+    // Apply change to all TPS43 devices in the system
     for (size_t i = 0; i < ARRAY_SIZE(tps43_devs); i++) {
         int ret = tps43_set_sleep(tps43_devs[i], should_sleep);
         if (ret != 0) {
-            LOG_WRN("Ошибка управления питанием тачпада %zu: %d", i, ret);
+            LOG_WRN("Trackpad power management error %zu: %d", i, ret);
         }
     }
 
     return 0;
 }
 
-// Регистрируем слушатель событий ZMK
+// Register ZMK event listener
 ZMK_LISTENER(tps43_idle_sleeper, on_activity_state);
-// Подписываемся на события изменения состояния активности
+// Subscribe to activity state change events
 ZMK_SUBSCRIPTION(tps43_idle_sleeper, zmk_activity_state_changed);

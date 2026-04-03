@@ -1,36 +1,36 @@
-# Драйвер ZMK для тачпадов Azoteq IQS5XX
+# ZMK Driver for Azoteq IQS5XX Trackpads
 
-## Совместимость
+## Compatibility
 
-Этот драйвер должен работать с любым тачпадом на базе IQS5XX (TPS43 или TPS65).
+This driver should work with any IQS5XX-based trackpad (TPS43 or TPS65).
 
-## Поддержка
+## Features
 
-- Движение тачпада.
-- Одиночное касание: регистрируется как левый клик.
-- Касание двумя пальцами: регистрируется как правый клик.
-- Нажатие и удержание: регистрируется как непрерывный левый клик (перетаскивание).
-- Вертикальная прокрутка.
-- Горизонтальная прокрутка.
+- Trackpad movement.
+- Single tap: registered as left click.
+- Two-finger tap: registered as right click.
+- Press and hold: registered as continuous left click (drag).
+- Vertical scrolling.
+- Horizontal scrolling.
 
-## Использование
+## Usage
 
-- В файле конфигурации (нужной половины) укажите `CONFIG_INPUT_TPS43` для включения драйвера
+- In the configuration file (for the appropriate half), add `CONFIG_INPUT_TPS43` to enable the driver
 
 ```
 CONFIG_INPUT_TPS43=y
 ```
 
-- В `.overlay` файле пропишите `compatible = "azoteq,tps43"` внутри узла i2c там где будет (пример ниже) использоваться тачпад.
+- In the `.overlay` file, specify `compatible = "azoteq,tps43"` inside the i2c node where the trackpad will be used (example below).
 
-> Для просмотра полной информации по конфигурации тачпада смотрите файл: [доступные настройки тачпада](./dts/bindings/input/azoteq,tps43-common.yaml)
+> For complete trackpad configuration information, see the file: [available trackpad settings](./dts/bindings/input/azoteq,tps43-common.yaml)
 
 ```
 &i2c0 {
     status = "okay";
     clock-frequency = <I2C_BITRATE_FAST>;
-    pinctrl-0 = <&i2c0_default>;  /* конфигурация для SDA и SCL */
-    pinctrl-1 = <&i2c0_sleep>;    /* конфигурация для SDA и SCL */
+    pinctrl-0 = <&i2c0_default>;  /* Configuration for SDA and SCL */
+    pinctrl-1 = <&i2c0_sleep>;    /* Configuration for SDA and SCL */
     pinctrl-names = "default", "sleep";
 
     tps43_trackpad: trackpad@74 {
@@ -39,15 +39,15 @@ CONFIG_INPUT_TPS43=y
         status = "okay";
         
         /* GPIO connections */
-        rdy-gpios = <&pro_micro 21 GPIO_ACTIVE_HIGH>;  /* RDY пин */
-        rst-gpios = <&pro_micro 20 GPIO_ACTIVE_HIGH>;  /* RST пин */
+        rdy-gpios = <&pro_micro 21 GPIO_ACTIVE_HIGH>;  /* RDY pin */
+        rst-gpios = <&pro_micro 20 GPIO_ACTIVE_HIGH>;  /* RST pin */
 
         enable-power-management;
         
-        sensitivity = <110>;           /* 100% = нормальное состояние */
-        scroll-sensitivity = <10>;     /* 50% = нормальное состояние */
+        sensitivity = <110>;           /* 100% = normal state */
+        scroll-sensitivity = <10>;     /* 50% = normal state */
 
-        filter-settings=<0x0B>;        /* описание фильтра смотрите в `доступных настройках` */
+        filter-settings=<0x0B>;        /* See filter description in `available settings` */
 
         scroll;
         two-finger-tap;
@@ -61,14 +61,14 @@ CONFIG_INPUT_TPS43=y
 };
 ```
 
-- Теперь нужно прописать слушателя для отслеживания касаний:
+- Now you need to configure a listener for tracking touches:
 
-> Тут важно, что если у вас конфигурация `.overlay` тачпада на центральном устройстве, то используйте `Вариант 1`. Если тачпад расположена на переферийной часте клавиатуре, то используйте `Вариант 2`
+> Important: If your trackpad `.overlay` configuration is on the central device, use `Option 1`. If the trackpad is located on the peripheral half of the keyboard, use `Option 2`
 
 ---
-**Вариант 1**
+**Option 1**
 
-Достаточно указать слушателя в самом центральном устройстве.
+Simply specify the listener on the central device itself.
 
 ```
 / {
@@ -81,13 +81,13 @@ CONFIG_INPUT_TPS43=y
 
 ---
 
-... В ином случае ...
+... Otherwise ...
 
 ---
 
-**Вариант 2**
+**Option 2**
 
-Прописать `split_inputs` там где используется тачпад (в периферийной части клавиатуры)
+Configure `split_inputs` where the trackpad is used (on the peripheral half of the keyboard)
 
 ```
 / {
@@ -104,7 +104,7 @@ CONFIG_INPUT_TPS43=y
 };
 ```
 
-Теперь на центральной части нужно указать слушателя но без указания `device` (device указывается там где используется тачпад - в периферийной части)
+Now on the central part, you need to specify a listener but without specifying `device` (device is specified where the trackpad is used - on the peripheral part)
 
 ```
 / {
@@ -115,7 +115,7 @@ CONFIG_INPUT_TPS43=y
         tps43_split: tps43_split@0 {
             compatible = "zmk,input-split";
             reg = <0>;
-            /* Здесь нет свойства device - это прокси на центральной стороне */
+            /* No device property here - this is a proxy on the central side */
         };
     };
 
@@ -129,77 +129,77 @@ CONFIG_INPUT_TPS43=y
 ---
 
 
-> Для настройки тачпада Azoteq требуется 5 пинов!
+> Configuring the Azoteq trackpad requires 5 pins!
 
-Питание:
-3V на nice!nano -> VDD на IQS5xx.
-GNG (Земля) на nice!nano -> GND на IQS5xx.
+Power:
+3V on nice!nano -> VDD on IQS5xx.
+GND (Ground) on nice!nano -> GND on IQS5xx.
 
-Сигналы I2C:
-SDA на nice!nano -> SDA на IQS5xx.
-SCL на nice!nano -> SCL на IQS5xx.
+I2C signals:
+SDA on nice!nano -> SDA on IQS5xx.
+SCL on nice!nano -> SCL on IQS5xx.
 
-Пин "DR" или "RDY" на IQS5xx -> Любой доступный GPIO на nice!nano. В devicetree этот пин указывается как rdy-gpios.
-Пин "RST" используется для инициализации сброса устройства. В devicetree этот пин указывается как rst-gpios.
+"DR" or "RDY" pin on IQS5xx -> Any available GPIO on nice!nano. In the devicetree, this pin is specified as rdy-gpios.
+"RST" pin is used to initialize device reset. In the devicetree, this pin is specified as rst-gpios.
 
 
-## Правильная последовательность работы драйвера
+## Proper Driver Operation Sequence
 
 ```txt
-1. Включение питания / Аппаратный сброс
-   └─> Ожидание 10мс
-   └─> RST: LOW (10мс) → HIGH
-   └─> Ожидание ~600мс для загрузки прошивки
+1. Power on / Hardware reset
+   └─> Wait 10ms
+   └─> RST: LOW (10ms) → HIGH
+   └─> Wait ~600ms for firmware loading
 
-2. Проверка флага SHOW_RESET (0x000F бит 0)
-   └─> Опрос до появления флага
+2. Check SHOW_RESET flag (0x000F bit 0)
+   └─> Poll until flag appears
 
-3. Подтверждение сброса
-   └─> Запись ACK_RESET (0x0431 = 0x80)
+3. Acknowledge reset
+   └─> Write ACK_RESET (0x0431 = 0x80)
 
-4. Конфигурация устройства
-   └─> System Config 1 (0x058F) - режимы событий
-   └─> XY Config (0x0669) - настройки осей
-   └─> Настройки фильтров, жестов и т.д.
+4. Device configuration
+   └─> System Config 1 (0x058F) - event modes
+   └─> XY Config (0x0669) - axis settings
+   └─> Filter settings, gestures, etc.
 
-5. Завершение настройки
-   └─> Запись SETUP_COMPLETE (0x058E = 0x40)
+5. Complete setup
+   └─> Write SETUP_COMPLETE (0x058E = 0x40)
 
-6. Конфигурация прерывания GPIO (RDY)
-   └─> ПОСЛЕ полной конфигурации
+6. Configure GPIO interrupt (RDY)
+   └─> AFTER full configuration
 
 ```
 
-## Управление питанием (Power Management)
+## Power Management
 
-Драйвер поддерживает два независимых механизма управления питанием для снижения энергопотребления:
+The driver supports two independent power management mechanisms to reduce power consumption:
 
-### Интеграция с системой управления питанием ZMK
+### Integration with ZMK Power Management System
 
-Тачпад автоматически переходит в режим sleep при переходе клавиатуры в состояние idle/sleep.
+The trackpad automatically enters sleep mode when the keyboard transitions to idle/sleep state.
 
-**Как это работает:**
-- Модуль `tps43_idle_sleeper.c` подписывается на события ZMK `zmk_activity_state_changed`
-- При переходе ZMK в состояние `IDLE` или `SLEEP` тачпад переводятся в sleep
-- При возврате в состояние `ACTIVE` тачпады пробуждаются
+**How it works:**
+- The `tps43_idle_sleeper.c` module subscribes to ZMK `zmk_activity_state_changed` events
+- When ZMK transitions to `IDLE` or `SLEEP` state, the trackpad enters sleep mode
+- When returning to `ACTIVE` state, the trackpad wakes up
 
-**Состояния ZMK:**
-- `ZMK_ACTIVITY_ACTIVE` - клавиатура активна, тачпад работает
-- `ZMK_ACTIVITY_IDLE` - клавиатура в режиме ожидания, тачпад в sleep
-- `ZMK_ACTIVITY_SLEEP` - клавиатура в режиме сна, тачпад в sleep
+**ZMK States:**
+- `ZMK_ACTIVITY_ACTIVE` - keyboard active, trackpad operational
+- `ZMK_ACTIVITY_IDLE` - keyboard in idle mode, trackpad in sleep
+- `ZMK_ACTIVITY_SLEEP` - keyboard in sleep mode, trackpad in sleep
 
-**Важно:** Этот механизм работает только если `enable-power-management` включен.
+**Important:** This mechanism only works if `enable-power-management` is enabled.
 
-### Технические детали
+### Technical Details
 
-**Регистр управления:**
-- Режим suspend управляется через регистр `SYSTEM_CONTROL_1` (0x0432)
-- Бит `TPS43_SUSPEND` (BIT(1)) устанавливается для перевода в suspend
-- В режиме suspend тачпад потребляет минимальное питание и не обрабатывает касания
+**Control register:**
+- Suspend mode is controlled via the `SYSTEM_CONTROL_1` register (0x0432)
+- The `TPS43_SUSPEND` bit (BIT(1)) is set to enter suspend mode
+- In suspend mode, the trackpad consumes minimal power and does not process touches
 
-**Пробуждение:**
-- Автоматическое пробуждение происходит при обнаружении активности через прерывание RDY
-- При пробуждении тачпад автоматически обрабатывает первое касание
+**Wake-up:**
+- Automatic wake-up occurs when activity is detected via RDY interrupt
+- On wake-up, the trackpad automatically processes the first touch
 
-> При отсутствии `enable-power-management` управление питанием полностью отключено
+> Without `enable-power-management`, power management is completely disabled
 

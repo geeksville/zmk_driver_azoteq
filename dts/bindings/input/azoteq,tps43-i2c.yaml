@@ -1,5 +1,5 @@
 description: |
-  Драйвер сенсора тачпада Azoteq TPS43 по интерфейсу I2C
+  Azoteq TPS43 touchpad sensor driver over I2C interface
 
 compatible: "azoteq,tps43"
 
