@@ -35,6 +35,24 @@ extern "C" {
 #define TPS43_REG_SYSTEM_CONFIG_0   0x058E  /* 1 byte - System configuration */
 #define TPS43_REG_SYSTEM_CONFIG_1   0x058F  /* 1 byte - Additional configuration */
 
+#define TPS43_REG_GLOBAL_ATI_C      0x056B  /* 1 byte - Global ATI C value */
+#define TPS43_REG_ATI_TARGET        0x056D  /* 2 byte - ATI target value */
+#define TPS43_REG_REF_DRIFT_LIMIT   0x0571  /* 1 byte - ATI reference drift limit */
+#define TPS43_REG_REATI_LOWER_LIMIT 0x0573 /* 1 byte - ATI reattempt lower limit */
+#define TPS43_REG_REATI_UPPER_LIMIT 0x0574 /* 1 byte - ATI reattempt upper limit */
+#define TPS43_REG_MAX_COUNT_LIMIT   0x0575  /* 2 byte - ATI max count limit */
+#define TPS43_REG_ATI_RETRY_TIME    0x0577  /* 1 byte - ATI retry time [s] */
+#define TPS43_REG_REPPORT_RATE_ACTIVE 0x057A /* 2 byte - Report rate active [ms]*/
+#define TPS43_REG_REPORT_RATE_IDLE_TOUCH 0x057C  /* 2 byte - Report rate idle touch [ms] */
+#define TPS43_REG_REPORT_RATE_IDLE  0x057E  /* 2 byte - Report rate idle [ms] */
+#define TPS43_REG_REPORT_RATE_LP1   0x0580  /* 2 byte - Report rate lp1 [ms] */
+#define TPS43_REG_REPORT_RATE_LP2   0x0582  /* 2 byte - Report rate lp2 [ms] */
+#define TPS43_REG_TIMEOUT_ACTIVE    0x0584  /* 1 byte - Timeout active [s] */
+#define TPS43_REG_TIMEOUT_IDLE_TOUCH      0x0585  /* 1 byte - Timeout idle touch [s] */
+#define TPS43_REG_TIMEOUT_IDLE      0x0586  /* 1 byte - Timeout idle [s] */
+#define TPS43_REG_TIMEOUT_LP1       0x0587  /* 1 byte - Timeout lp1 [s] */
+#define TPS43_REG_REF_UPDATE_TIME   0x0588  /* 1 byte - Reference update time [s] */
+
 /* Touch data - main coordinates */
 // Read-only
 #define TPS43_REG_NUM_FINGERS       0x0011  /* 1 byte */
@@ -83,6 +101,7 @@ extern "C" {
 /* ============================================================ */
 
 #define TPS43_ACK_RESET             BIT(7)      /* Reset acknowledgment */
+#define TPS43_AUTO_ATI              BIT(5)      /* Automatic ATI mode enable */
 
 /* ============================================================ */
 /* System control 1 (0x0432) - 8 bits */
@@ -98,6 +117,7 @@ extern "C" {
 
 #define TPS43_SETUP_COMPLETE        BIT(6)      /* Setup complete flag */
 #define TPS43_WDT_ENABLE            BIT(5)      /* Watchdog timer enable */
+#define TPS43_REATI                 BIT(2)      /* ALP auto reattempt */
 
 
 /* ============================================================ */
@@ -107,6 +127,7 @@ extern "C" {
 #define TPS43_EVENT_MODE            BIT(0)
 #define TPS43_GESTURE_EVENT         BIT(1)
 #define TPS43_TP_EVENT              BIT(2)
+#define TPS43_REATI_EVENT           BIT(3)
 #define TPS43_TOUCH_EVENT           BIT(6)
 
 
