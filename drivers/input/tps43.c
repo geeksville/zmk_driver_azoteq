@@ -104,7 +104,8 @@ static int tps43_i2c_read_reg16(const struct device *dev, uint16_t reg, uint16_t
  * @param val Value to write (16-bit)
  * @return 0 on success, negative error code on failure
  */
-static int tps43_i2c_write_reg16(const struct device *dev, uint16_t reg, uint16_t val)
+static __maybe_unused int tps43_i2c_write_reg16(const struct device *dev, uint16_t reg,
+                                                uint16_t val)
 {
     const struct tps43_config *config = dev->config;
     // forms 4-byte register address: (MSB, LSB, MSB_VALUE, LSB_VALUE)
@@ -148,6 +149,7 @@ static int tps43_i2c_read_reg8_w_err(const struct device *dev, uint16_t reg, uin
         }
         return ret;
     }
+    return ret;
 }
 
 static inline int tps43_i2c_read_reg8(const struct device *dev, uint16_t reg, uint8_t *val)
