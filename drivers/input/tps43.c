@@ -571,7 +571,7 @@ static int tps43_configure_device(const struct device *dev) {
     LOG_INF("Filter settings set: 0x%02X", config->filter_settings);
 
     // set configuration complete flag
-    ret = tps43_i2c_write_reg8(dev, TPS43_REG_SYSTEM_CONFIG_0, TPS43_SETUP_COMPLETE);
+    ret = tps43_i2c_write_reg8(dev, TPS43_REG_SYSTEM_CONFIG_0, TPS43_SETUP_COMPLETE | TPS43_WDT_ENABLE | TPS43_REATI);
     if (ret != 0) {
         LOG_WRN("Setup complete flag write error: %d", ret);
         return ret;
@@ -597,7 +597,7 @@ static int check_reset_and_reconfigure(const struct device *dev) {
     uint8_t wait_count = 0;
     const uint8_t max_wait_count = 50;
 
-    // Wait for device readiness
+    // Wait for device readiness (the first few reads may fail until device is up)
     do {
         ret = tps43_i2c_read_reg8(dev, TPS43_REG_SYSTEM_INFO_0, &sys_info);
         if (ret < 0) {
@@ -614,8 +614,8 @@ static int check_reset_and_reconfigure(const struct device *dev) {
 
     // after reset, set flag to acknowledge that reset was performed
     if (sys_info & TPS43_SHOW_RESET) {
-        LOG_INF("SHOW_RESET detected, sending ACK_RESET");
-        ret = tps43_i2c_write_reg8(dev, TPS43_REG_SYSTEM_CONTROL_0, TPS43_ACK_RESET);
+        LOG_INF("SHOW_RESET detected, sending ACK_RESET and enable ATI");
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_SYSTEM_CONTROL_0, TPS43_ACK_RESET | TPS43_AUTO_ATI);
         if (ret != 0) {
             LOG_ERR("ACK_RESET send error: %d", ret);
             return ret;
@@ -643,6 +643,159 @@ static int check_reset_and_reconfigure(const struct device *dev) {
  */
 static int tps43_set_suspend(const struct device *dev, bool suspend) {
     return tps43_set_suspend_internal(dev, suspend, false);
+}
+
+static void tps43_dump_registers(const struct device *dev) {
+    uint8_t reg8;
+    uint16_t reg16;
+    int ret = 0;
+    int read_ret;
+
+    LOG_INF("Dumping TPS43 registers");
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_SYSTEM_INFO_0, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SYSTEM_INFO_0 (0x%04X): 0x%02X", TPS43_REG_SYSTEM_INFO_0, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_SYSTEM_INFO_1, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SYSTEM_INFO_1 (0x%04X): 0x%02X", TPS43_REG_SYSTEM_INFO_1, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_SYSTEM_CONTROL_0, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SYSTEM_CONTROL_0 (0x%04X): 0x%02X", TPS43_REG_SYSTEM_CONTROL_0, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_SYSTEM_CONTROL_1, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SYSTEM_CONTROL_1 (0x%04X): 0x%02X", TPS43_REG_SYSTEM_CONTROL_1, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_SYSTEM_CONFIG_0, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SYSTEM_CONFIG_0 (0x%04X): 0x%02X", TPS43_REG_SYSTEM_CONFIG_0, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_SYSTEM_CONFIG_1, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SYSTEM_CONFIG_1 (0x%04X): 0x%02X", TPS43_REG_SYSTEM_CONFIG_1, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_GLOBAL_ATI_C, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("GLOBAL_ATI_C (0x%04X): 0x%02X", TPS43_REG_GLOBAL_ATI_C, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_ATI_TARGET, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("ATI_TARGET (0x%04X): 0x%04X", TPS43_REG_ATI_TARGET, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_REF_DRIFT_LIMIT, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("REF_DRIFT_LIMIT (0x%04X): 0x%02X", TPS43_REG_REF_DRIFT_LIMIT, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_REATI_LOWER_LIMIT, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("REATI_LOWER_LIMIT (0x%04X): 0x%02X", TPS43_REG_REATI_LOWER_LIMIT, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_REATI_UPPER_LIMIT, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("REATI_UPPER_LIMIT (0x%04X): 0x%02X", TPS43_REG_REATI_UPPER_LIMIT, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_MAX_COUNT_LIMIT, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("MAX_COUNT_LIMIT (0x%04X): 0x%04X", TPS43_REG_MAX_COUNT_LIMIT, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_ATI_RETRY_TIME, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("ATI_RETRY_TIME (0x%04X): 0x%02X", TPS43_REG_ATI_RETRY_TIME, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_REPPORT_RATE_ACTIVE, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("REPPORT_RATE_ACTIVE (0x%04X): 0x%04X", TPS43_REG_REPPORT_RATE_ACTIVE, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_REPORT_RATE_IDLE_TOUCH, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("REPORT_RATE_IDLE_TOUCH (0x%04X): 0x%04X", TPS43_REG_REPORT_RATE_IDLE_TOUCH, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_REPORT_RATE_IDLE, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("REPORT_RATE_IDLE (0x%04X): 0x%04X", TPS43_REG_REPORT_RATE_IDLE, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_REPORT_RATE_LP1, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("REPORT_RATE_LP1 (0x%04X): 0x%04X", TPS43_REG_REPORT_RATE_LP1, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_REPORT_RATE_LP2, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("REPORT_RATE_LP2 (0x%04X): 0x%04X", TPS43_REG_REPORT_RATE_LP2, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_TIMEOUT_ACTIVE, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("TIMEOUT_ACTIVE (0x%04X): 0x%02X", TPS43_REG_TIMEOUT_ACTIVE, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_TIMEOUT_IDLE_TOUCH, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("TIMEOUT_IDLE_TOUCH (0x%04X): 0x%02X", TPS43_REG_TIMEOUT_IDLE_TOUCH, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_TIMEOUT_IDLE, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("TIMEOUT_IDLE (0x%04X): 0x%02X", TPS43_REG_TIMEOUT_IDLE, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_TIMEOUT_LP1, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("TIMEOUT_LP1 (0x%04X): 0x%02X", TPS43_REG_TIMEOUT_LP1, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_REF_UPDATE_TIME, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("REF_UPDATE_TIME (0x%04X): 0x%02X", TPS43_REG_REF_UPDATE_TIME, reg8);
+    }
+
+    if (ret != 0) {
+        LOG_WRN("error: some reads failed...");
+    }
+
+    tps43_end_communication_window(dev);
 }
 
 /**
@@ -734,6 +887,8 @@ static int tps43_init(const struct device *dev) {
     k_sem_init(&drv_data->lock, 1, 1);
 
     k_work_init(&drv_data->work, tps43_work_handler);
+
+    tps43_dump_registers(dev);
     
     LOG_INF("TPS43 driver successfully initialized");
     return 0;
