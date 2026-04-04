@@ -82,7 +82,7 @@ extern "C" {
 /* System information 0 (0x000F) - Status flags - 8 bits */
 /* ============================================================ */
 
-#define TPS43_SHOW_RESET            BIT(0)      /* Flag check on system reset */
+#define TPS43_SHOW_RESET            BIT(7)      /* Flag check on system reset */
 
 /* ============================================================ */
 /* System information 1 (0x0010) - Status flags - 8 bits */
