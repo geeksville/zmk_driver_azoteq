@@ -570,6 +570,37 @@ static int tps43_configure_device(const struct device *dev) {
     }
     LOG_INF("Filter settings set: 0x%02X", config->filter_settings);
 
+    // dynamic filter configuration (only if set in DT)
+    if (config->filter_dynamic_bottom != -1) {
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_XY_DYNAMIC_FILTER_BOTTOM,
+                                   (uint8_t)config->filter_dynamic_bottom);
+        if (ret != 0) {
+            LOG_WRN("Dynamic filter bottom write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Dynamic filter bottom set: 0x%02X", (uint8_t)config->filter_dynamic_bottom);
+    }
+
+    if (config->filter_dynamic_lower != -1) {
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_XY_DYNAMIC_FILTER_LOWER,
+                                   (uint8_t)config->filter_dynamic_lower);
+        if (ret != 0) {
+            LOG_WRN("Dynamic filter lower write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Dynamic filter lower set: 0x%02X", (uint8_t)config->filter_dynamic_lower);
+    }
+
+    if (config->filter_dynamic_upper != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_XY_DYNAMIC_FILTER_UPPER,
+                                    (uint16_t)config->filter_dynamic_upper);
+        if (ret != 0) {
+            LOG_WRN("Dynamic filter upper write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Dynamic filter upper set: 0x%04X", (uint16_t)config->filter_dynamic_upper);
+    }
+
     // set configuration complete flag
     ret = tps43_i2c_write_reg8(dev, TPS43_REG_SYSTEM_CONFIG_0, TPS43_SETUP_COMPLETE | TPS43_WDT_ENABLE | TPS43_REATI);
     if (ret != 0) {
@@ -791,6 +822,48 @@ static void tps43_dump_registers(const struct device *dev) {
         LOG_INF("REF_UPDATE_TIME (0x%04X): 0x%02X", TPS43_REG_REF_UPDATE_TIME, reg8);
     }
 
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_XY_STATIC_BETA, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("XY_STATIC_BETA (0x%04X): 0x%02X", TPS43_REG_XY_STATIC_BETA, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_ALP_COUNT_BETA, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("ALP_COUNT_BETA (0x%04X): 0x%02X", TPS43_REG_ALP_COUNT_BETA, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_ALP1_LTA_BETA, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("ALP1_LTA_BETA (0x%04X): 0x%02X", TPS43_REG_ALP1_LTA_BETA, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_ALP2_LTA_BETA, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("ALP2_LTA_BETA (0x%04X): 0x%02X", TPS43_REG_ALP2_LTA_BETA, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_XY_DYNAMIC_FILTER_BOTTOM, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("XY_DYNAMIC_FILTER_BOTTOM (0x%04X): 0x%02X", TPS43_REG_XY_DYNAMIC_FILTER_BOTTOM, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_XY_DYNAMIC_FILTER_LOWER, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("XY_DYNAMIC_FILTER_LOWER (0x%04X): 0x%02X", TPS43_REG_XY_DYNAMIC_FILTER_LOWER, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_XY_DYNAMIC_FILTER_UPPER, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("XY_DYNAMIC_FILTER_UPPER (0x%04X): 0x%04X", TPS43_REG_XY_DYNAMIC_FILTER_UPPER, reg16);
+    }
+
     if (ret != 0) {
         LOG_WRN("error: some reads failed...");
     }
@@ -922,6 +995,9 @@ static int tps43_init(const struct device *dev) {
         .scroll_sensitivity = DT_INST_PROP_OR(inst, scroll_sensitivity, 50),                         \
         .enable_power_management = DT_INST_PROP_OR(inst, enable_power_management, true),             \
         .filter_settings = DT_INST_PROP_OR(inst, filter_settings, 0x0F),                             \
+        .filter_dynamic_bottom = DT_INST_PROP_OR(inst, filter_dynamic_bottom, -1),                    \
+        .filter_dynamic_lower = DT_INST_PROP_OR(inst, filter_dynamic_lower, -1),                     \
+        .filter_dynamic_upper = DT_INST_PROP_OR(inst, filter_dynamic_upper, -1),                     \
     };                                                                                               \
                                                                                                      \
     DEVICE_DT_INST_DEFINE(inst, tps43_init, NULL, &tps43_##inst##_drvdata, &tps43_##inst##_config,   \

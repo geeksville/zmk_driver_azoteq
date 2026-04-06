@@ -53,6 +53,15 @@ extern "C" {
 #define TPS43_REG_TIMEOUT_LP1       0x0587  /* 1 byte - Timeout lp1 [s] */
 #define TPS43_REG_REF_UPDATE_TIME   0x0588  /* 1 byte - Reference update time [s] */
 
+// XY filtering settings
+#define TPS43_REG_XY_STATIC_BETA            0x0633  /* 1 byte - XY static beta (See 5.9.2.2) */
+#define TPS43_REG_ALP_COUNT_BETA            0x0634  /* 1 byte - ALP count beta (See 3.3.2) */
+#define TPS43_REG_ALP1_LTA_BETA             0x0635  /* 1 byte - ALP1 LTA beta (See 3.4.2) */
+#define TPS43_REG_ALP2_LTA_BETA             0x0636  /* 1 byte - ALP2 LTA beta */
+#define TPS43_REG_XY_DYNAMIC_FILTER_BOTTOM  0x0637  /* 1 byte - XY dynamic filter bottom beta (See 5.9.2.1) */
+#define TPS43_REG_XY_DYNAMIC_FILTER_LOWER   0x0638  /* 1 byte - XY dynamic filter lower speed */
+#define TPS43_REG_XY_DYNAMIC_FILTER_UPPER   0x0639  /* 2 bytes - XY dynamic filter upper speed */
+
 /* Touch data - main coordinates */
 // Read-only
 #define TPS43_REG_NUM_FINGERS       0x0011  /* 1 byte */
@@ -194,6 +203,9 @@ struct tps43_config {
     bool enable_power_management;
 
     uint8_t filter_settings;
+    int16_t filter_dynamic_bottom;
+    int16_t filter_dynamic_lower;
+    int16_t filter_dynamic_upper;
 };
 
 struct tps43_drv_data {

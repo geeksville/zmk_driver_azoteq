@@ -33,7 +33,32 @@ properties:
       - 0x00: All filters disabled. Raw sensor data, may have noise.
       
       Values can be combined using bitwise OR (e.g., 0x01 | 0x02 = 0x03).
+      
+  filter-dynamic-bottom:
+    type: int
+    required: false
+    description: |
+      XY dynamic filter bottom beta
+      Controls the minimum filtering applied to touch coordinates.
+      Lower values reduce smoothing at low speeds, improving responsiveness.
+      See datasheet section 5.9.2.1. Only written if explicitly set.
 
+  filter-dynamic-lower:
+    type: int
+    required: false
+    description: |
+      XY dynamic filter lower speed threshold 
+      Defines the speed below which the bottom beta filter coefficient is used.
+      Only written if explicitly set.
+
+  filter-dynamic-upper:
+    type: int
+    required: false
+    description: |
+      XY dynamic filter upper speed threshold 
+      Defines the speed above which maximum filtering is applied.
+      Only written if explicitly set.
+      
   sensitivity:
     type: int
     required: false
@@ -88,7 +113,7 @@ properties:
   invert-y:
     type: boolean
     description: If present, invert Y coordinate values.
-      
+
   invert-scroll-x:
     type: boolean
     description: If present, invert X scroll values.
