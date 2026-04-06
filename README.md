@@ -15,7 +15,7 @@ This driver should work with any IQS5XX-based trackpad (TPS43 or TPS65).
 
 ## Gesture support
 
-- Use three fingers.
+- Either 3-finger or 1-finger swiping is supported.
 - Left/right/up/down swipe send INPUT_BTN_WEST/EAST/NORTH/SOUTH events.  You can map them to other keys/actions as you wish in your dts file.
 
 ## Usage
@@ -58,6 +58,16 @@ CONFIG_INPUT_TPS43=y
         // filter-dynamic-upper=<0xFA>;   /* Dynamic filter upper speed (optional) */
         x-resolution=<2048>;            /* X resolution in pixels */
         y-resolution=<1792>;            /* Y resolution in pixels */
+
+        // swipe-initial-distance=<500>;          /* Swipe initial distance in px (optional) */
+        // swipe-initial-time=<200>;              /* Swipe initial time in ms (optional) */
+        // swipe-angle=<20>;                      /* Swipe angle in degrees (optional) */
+        // swipe-consecutive-distance=<200>;      /* Swipe consecutive distance in px (optional) */
+        // swipe-consecutive-time=<150>;          /* Swipe consecutive time in ms (optional) */
+        // scroll-initial-distance=<100>;         /* Scroll initial distance in px (optional) */
+        // scroll-angle=<30>;                     /* Scroll angle in degrees (optional) */
+        // zoom-initial-distance=<100>;           /* Zoom initial distance in px (optional) */
+        // zoom-consecutive-distance=<200>;       /* Zoom consecutive distance in px (optional) */
 
         scroll;
         two-finger-tap;

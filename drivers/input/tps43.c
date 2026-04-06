@@ -11,6 +11,7 @@
 #include <zephyr/dt-bindings/input/input-event-codes.h>
 #include <zephyr/logging/log.h>
 #include <stdlib.h>
+#include <math.h>
 #include <errno.h>
 
 #include "tps43.h"
@@ -303,6 +304,30 @@ done:
     return ret;
 }
 
+/** Common swipe handling for 1 and 3 finger variants */
+static void tps43_handle_swipe(const struct device *dev, int16_t rel_x, int16_t rel_y) {
+    if (rel_x < 0) {
+        LOG_INF("swipe left - INPUT_BTN_WEST");
+        input_report_key(dev, INPUT_BTN_WEST, 1, true, K_FOREVER);
+        input_report_key(dev, INPUT_BTN_WEST, 0, true, K_FOREVER);
+    }
+    if (rel_x > 0) {
+        LOG_INF("swipe right - INPUT_BTN_EAST");
+        input_report_key(dev, INPUT_BTN_EAST, 1, true, K_FOREVER);
+        input_report_key(dev, INPUT_BTN_EAST, 0, true, K_FOREVER);
+    }
+    if (rel_y < 0) {
+        LOG_INF("swipe up - INPUT_BTN_NORTH");
+        input_report_key(dev, INPUT_BTN_NORTH, 1, true, K_FOREVER);
+        input_report_key(dev, INPUT_BTN_NORTH, 0, true, K_FOREVER);
+    }
+    if (rel_y > 0) {
+        LOG_INF("swipe down - INPUT_BTN_SOUTH");
+        input_report_key(dev, INPUT_BTN_SOUTH, 1, true, K_FOREVER);
+        input_report_key(dev, INPUT_BTN_SOUTH, 0, true, K_FOREVER);
+    }
+}
+
 /**
  * @brief Main work handler for processing trackpad events
  * 
@@ -347,6 +372,19 @@ static void tps43_work_handler(struct k_work *work) {
         LOG_ERR("Gesture events read error: %d", ret);
         goto done;
     }
+
+    // preread rel_x/rel_y because useful for many handlers
+    int16_t rel_x = 0, rel_y = 0;
+    ret = tps43_i2c_read_reg16(dev, TPS43_REG_REL_X, (uint16_t*)&rel_x);
+    if (ret < 0) {
+        LOG_ERR("REL_X read error: %d", ret);
+        goto done;
+    }
+    ret = tps43_i2c_read_reg16(dev, TPS43_REG_REL_Y, (uint16_t*)&rel_y);
+    if (ret < 0) {
+        LOG_ERR("REL_Y read error: %d", ret);
+        goto done;
+    }    
     
     if (gestures_events[0] != 0 || gestures_events[1] != 0) {
 
@@ -356,6 +394,10 @@ static void tps43_work_handler(struct k_work *work) {
             LOG_INF("Single tap → LEFT BUTTON");
             input_report_key(dev, INPUT_BTN_0, 1, true, K_FOREVER);
             input_report_key(dev, INPUT_BTN_0, 0, true, K_FOREVER);  
+        }
+        if (gestures_events[0] & (TPS43_SWIPE_UP | TPS43_SWIPE_DOWN | TPS43_SWIPE_LEFT | TPS43_SWIPE_RIGHT)) {
+            LOG_INF("Single finger swipe");
+            tps43_handle_swipe(dev, rel_x, rel_y);
         }
         if (gestures_events[1] & TPS43_TWO_FINGER_TAP) {
             LOG_INF("Two finger tap → RIGHT BUTTON");
@@ -382,17 +424,6 @@ static void tps43_work_handler(struct k_work *work) {
     }
 
     if (sys_info & TPS43_TP_MOVEMENT) {
-        int16_t rel_x = 0, rel_y = 0;
-        ret = tps43_i2c_read_reg16(dev, TPS43_REG_REL_X, (uint16_t*)&rel_x);
-        if (ret < 0) {
-            LOG_ERR("REL_X read error: %d", ret);
-            goto done;
-        }
-        ret = tps43_i2c_read_reg16(dev, TPS43_REG_REL_Y, (uint16_t*)&rel_y);
-        if (ret < 0) {
-            LOG_ERR("REL_Y read error: %d", ret);
-            goto done;
-        }
         // Send cursor movement
         if (rel_x != 0 || rel_y != 0) {
             if (rel_x != 0 ) {
@@ -414,30 +445,11 @@ static void tps43_work_handler(struct k_work *work) {
                     goto done;
                 }
                 if (num_fingers == 3) {
-                    if (rel_x < 0) {
-                        LOG_INF("3-finger swipe left - INPUT_BTN_WEST");
-                        input_report_key(dev, INPUT_BTN_WEST, 1, true, K_FOREVER);
-                        input_report_key(dev, INPUT_BTN_WEST, 0, true, K_FOREVER);
-                    }
-                    if (rel_x > 0) {
-                        LOG_INF("3-finger swipe right - INPUT_BTN_EAST");
-                        input_report_key(dev, INPUT_BTN_EAST, 1, true, K_FOREVER);
-                        input_report_key(dev, INPUT_BTN_EAST, 0, true, K_FOREVER);
-                    }
-                    if (rel_y < 0) {
-                        LOG_INF("3-finger swipe up - INPUT_BTN_NORTH");
-                        input_report_key(dev, INPUT_BTN_NORTH, 1, true, K_FOREVER);
-                        input_report_key(dev, INPUT_BTN_NORTH, 0, true, K_FOREVER);
-                    }
-                    if (rel_y > 0) {
-                        LOG_INF("3-finger swipe down - INPUT_BTN_SOUTH");
-                        input_report_key(dev, INPUT_BTN_SOUTH, 1, true, K_FOREVER);
-                        input_report_key(dev, INPUT_BTN_SOUTH, 0, true, K_FOREVER);
-                    }
+                    LOG_INF("Three-finger movement - checking for swipe");
+                    tps43_handle_swipe(dev, rel_x, rel_y);
                 }
             }
 
-        
             if (is_scroll_active) {
                 // Scroll processing: keep only dominant axis
                 if (abs(rel_x) > abs(rel_y)) {
@@ -630,6 +642,101 @@ static int tps43_configure_device(const struct device *dev) {
             return ret;
         }
         LOG_INF("Y resolution set: %d", (uint16_t)config->y_resolution);
+    }
+
+    // swipe configuration (only if set in DT)
+    if (config->swipe_initial_distance != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_SWIPE_INITIAL_DISTANCE,
+                                    (uint16_t)config->swipe_initial_distance);
+        if (ret != 0) {
+            LOG_WRN("Swipe distance write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Swipe initial distance set: %u px", (uint16_t)config->swipe_initial_distance);
+    }
+
+    if (config->swipe_initial_time != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_SWIPE_INITIAL_TIME,
+                                    (uint16_t)config->swipe_initial_time);
+        if (ret != 0) {
+            LOG_WRN("Swipe time write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Swipe initial time set: %u ms", (uint16_t)config->swipe_initial_time);
+    }
+
+    if (config->swipe_angle != -1) {
+        double angle_rad = config->swipe_angle * 3.141592653589793 / 180.0;
+        uint8_t reg_val = (uint8_t)(64.0 * tan(angle_rad));
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_SWIPE_ANGLE, reg_val);
+        if (ret != 0) {
+            LOG_WRN("Swipe angle write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Swipe angle set: %d deg (reg: 0x%02X)", config->swipe_angle, reg_val);
+    }
+
+    if (config->swipe_consecutive_distance != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_SWIPE_CONSECUTIVE_DISTANCE,
+                                    (uint16_t)config->swipe_consecutive_distance);
+        if (ret != 0) {
+            LOG_WRN("Swipe consecutive distance write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Swipe consecutive distance set: %u px", (uint16_t)config->swipe_consecutive_distance);
+    }
+
+    if (config->swipe_consecutive_time != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_SWIPE_CONSECUTIVE_TIME,
+                                    (uint16_t)config->swipe_consecutive_time);
+        if (ret != 0) {
+            LOG_WRN("Swipe consecutive time write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Swipe consecutive time set: %u ms", (uint16_t)config->swipe_consecutive_time);
+    }
+
+    // scroll configuration (only if set in DT)
+    if (config->scroll_initial_distance != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_SCROLL_INITIAL_DISTANCE,
+                                    (uint16_t)config->scroll_initial_distance);
+        if (ret != 0) {
+            LOG_WRN("Scroll initial distance write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Scroll initial distance set: %u px", (uint16_t)config->scroll_initial_distance);
+    }
+
+    if (config->scroll_angle != -1) {
+        double angle_rad = config->scroll_angle * 3.141592653589793 / 180.0;
+        uint8_t reg_val = (uint8_t)(64.0 * tan(angle_rad));
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_SCROLL_ANGLE, reg_val);
+        if (ret != 0) {
+            LOG_WRN("Scroll angle write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Scroll angle set: %d deg (reg: 0x%02X)", config->scroll_angle, reg_val);
+    }
+
+    // zoom configuration (only if set in DT)
+    if (config->zoom_initial_distance != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_ZOOM_INITIAL_DISTANCE,
+                                    (uint16_t)config->zoom_initial_distance);
+        if (ret != 0) {
+            LOG_WRN("Zoom initial distance write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Zoom initial distance set: %u px", (uint16_t)config->zoom_initial_distance);
+    }
+
+    if (config->zoom_consecutive_distance != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_ZOOM_CONSECUTIVE_DISTANCE,
+                                    (uint16_t)config->zoom_consecutive_distance);
+        if (ret != 0) {
+            LOG_WRN("Zoom consecutive distance write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Zoom consecutive distance set: %u px", (uint16_t)config->zoom_consecutive_distance);
     }
 
     // set configuration complete flag
@@ -907,6 +1014,78 @@ static void tps43_dump_registers(const struct device *dev) {
         LOG_INF("Y_RESOLUTION (0x%04X): 0x%04X", TPS43_REG_Y_RESOLUTION, reg16);
     }
 
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_TAP_TIME, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("TAP_TIME (0x%04X): %u ms", TPS43_REG_TAP_TIME, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_TAP_DISTANCE, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("TAP_DISTANCE (0x%04X): %u px", TPS43_REG_TAP_DISTANCE, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_HOLD_TIME, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("HOLD_TIME (0x%04X): %u ms", TPS43_REG_HOLD_TIME, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_SWIPE_INITIAL_TIME, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SWIPE_INITIAL_TIME (0x%04X): %u ms", TPS43_REG_SWIPE_INITIAL_TIME, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_SWIPE_INITIAL_DISTANCE, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SWIPE_INITIAL_DISTANCE (0x%04X): %u px", TPS43_REG_SWIPE_INITIAL_DISTANCE, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_SWIPE_CONSECUTIVE_TIME, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SWIPE_CONSECUTIVE_TIME (0x%04X): %u ms", TPS43_REG_SWIPE_CONSECUTIVE_TIME, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_SWIPE_CONSECUTIVE_DISTANCE, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SWIPE_CONSECUTIVE_DISTANCE (0x%04X): %u px", TPS43_REG_SWIPE_CONSECUTIVE_DISTANCE, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_SWIPE_ANGLE, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SWIPE_ANGLE (0x%04X): 0x%02X", TPS43_REG_SWIPE_ANGLE, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_SCROLL_INITIAL_DISTANCE, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SCROLL_INITIAL_DISTANCE (0x%04X): %u px", TPS43_REG_SCROLL_INITIAL_DISTANCE, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg8(dev, TPS43_REG_SCROLL_ANGLE, &reg8);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("SCROLL_ANGLE (0x%04X): 0x%02X", TPS43_REG_SCROLL_ANGLE, reg8);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_ZOOM_INITIAL_DISTANCE, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("ZOOM_INITIAL_DISTANCE (0x%04X): %u px", TPS43_REG_ZOOM_INITIAL_DISTANCE, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_ZOOM_CONSECUTIVE_DISTANCE, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("ZOOM_CONSECUTIVE_DISTANCE (0x%04X): %u px", TPS43_REG_ZOOM_CONSECUTIVE_DISTANCE, reg16);
+    }
+
     if (ret != 0) {
         LOG_WRN("error: some reads failed...");
     }
@@ -1043,6 +1222,15 @@ static int tps43_init(const struct device *dev) {
         .filter_dynamic_upper = DT_INST_PROP_OR(inst, filter_dynamic_upper, -1),                     \
         .x_resolution = DT_INST_PROP_OR(inst, x_resolution, -1),                                     \
         .y_resolution = DT_INST_PROP_OR(inst, y_resolution, -1),                                     \
+        .swipe_initial_distance = DT_INST_PROP_OR(inst, swipe_initial_distance, -1),                 \
+        .swipe_initial_time = DT_INST_PROP_OR(inst, swipe_initial_time, -1),                         \
+        .swipe_angle = DT_INST_PROP_OR(inst, swipe_angle, -1),                                       \
+        .swipe_consecutive_distance = DT_INST_PROP_OR(inst, swipe_consecutive_distance, -1),         \
+        .swipe_consecutive_time = DT_INST_PROP_OR(inst, swipe_consecutive_time, -1),                 \
+        .scroll_initial_distance = DT_INST_PROP_OR(inst, scroll_initial_distance, -1),               \
+        .scroll_angle = DT_INST_PROP_OR(inst, scroll_angle, -1),                                     \
+        .zoom_initial_distance = DT_INST_PROP_OR(inst, zoom_initial_distance, -1),                   \
+        .zoom_consecutive_distance = DT_INST_PROP_OR(inst, zoom_consecutive_distance, -1),           \
     };                                                                                               \
                                                                                                      \
     DEVICE_DT_INST_DEFINE(inst, tps43_init, NULL, &tps43_##inst##_drvdata, &tps43_##inst##_config,   \

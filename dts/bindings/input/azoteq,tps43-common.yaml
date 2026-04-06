@@ -135,3 +135,86 @@ properties:
   invert-scroll-y:
     type: boolean
     description: If present, invert Y scroll values.
+
+  swipe-initial-distance:
+    type: int
+    required: false
+    description: |
+      Swipe initial distance in pixels.
+      Sets the minimum distance a finger must travel to trigger a swipe gesture.
+      Written to the SWIPE_INITIAL_DISTANCE register (0x06C1).
+      Only written if explicitly set.
+
+  swipe-initial-time:
+    type: int
+    required: false
+    description: |
+      Swipe initial time in milliseconds.
+      Sets the maximum time allowed for the initial swipe movement.
+      Written to the SWIPE_INITIAL_TIME register (0x06BF).
+      Only written if explicitly set.
+
+  swipe-angle:
+    type: int
+    required: false
+    description: |
+      Swipe angle in degrees.
+      Sets the maximum deviation angle for a swipe gesture.
+      The value is specified in degrees and internally converted to
+      64*tan(angle) before writing to the SWIPE_ANGLE register (0x06C7).
+      Only written if explicitly set.
+
+  swipe-consecutive-distance:
+    type: int
+    required: false
+    description: |
+      Swipe consecutive distance in pixels.
+      Sets the distance threshold for consecutive swipe segments.
+      Written to the SWIPE_CONSECUTIVE_DISTANCE register (0x06C5).
+      Only written if explicitly set.
+
+  swipe-consecutive-time:
+    type: int
+    required: false
+    description: |
+      Swipe consecutive time in milliseconds.
+      Sets the time threshold for consecutive swipe segments.
+      Written to the SWIPE_CONSECUTIVE_TIME register (0x06C3).
+      Only written if explicitly set.
+
+  scroll-initial-distance:
+    type: int
+    required: false
+    description: |
+      Scroll initial distance in pixels.
+      Sets the minimum distance for a scroll gesture to trigger.
+      Written to the SCROLL_INITIAL_DISTANCE register (0x06C8).
+      Only written if explicitly set.
+
+  scroll-angle:
+    type: int
+    required: false
+    description: |
+      Scroll angle in degrees.
+      Sets the maximum deviation angle for a scroll gesture.
+      The value is specified in degrees and internally converted to
+      64*tan(angle) before writing to the SCROLL_ANGLE register (0x06CA).
+      Only written if explicitly set.
+
+  zoom-initial-distance:
+    type: int
+    required: false
+    description: |
+      Zoom initial distance in pixels.
+      Sets the minimum distance for a zoom gesture to trigger.
+      Written to the ZOOM_INITIAL_DISTANCE register (0x06CB).
+      Only written if explicitly set.
+
+  zoom-consecutive-distance:
+    type: int
+    required: false
+    description: |
+      Zoom consecutive distance in pixels.
+      Sets the distance threshold for consecutive zoom segments.
+      Written to the ZOOM_CONSECUTIVE_DISTANCE register (0x06CD).
+      Only written if explicitly set.

@@ -83,7 +83,18 @@ extern "C" {
 // Read-write // Low-level gesture configuration
 #define TPS43_REG_SINGLE_FINGER_GESTURES 0x06B7  /* 1 byte */
 #define TPS43_REG_MULTI_FINGER_GESTURES  0x06B8  /* 1 byte */
-
+#define TPS43_REG_TAP_TIME                   0x06B9  /* 2 bytes - Tap time [ms] */
+#define TPS43_REG_TAP_DISTANCE               0x06BB  /* 2 bytes - Tap distance [pixels] */
+#define TPS43_REG_HOLD_TIME                  0x06BD  /* 2 bytes - Hold time [ms] */
+#define TPS43_REG_SWIPE_INITIAL_TIME         0x06BF  /* 2 bytes - Swipe initial time [ms] */
+#define TPS43_REG_SWIPE_INITIAL_DISTANCE     0x06C1  /* 2 bytes - Swipe initial distance [pixels] */
+#define TPS43_REG_SWIPE_CONSECUTIVE_TIME     0x06C3  /* 2 bytes - Swipe consecutive time [ms] */
+#define TPS43_REG_SWIPE_CONSECUTIVE_DISTANCE 0x06C5  /* 2 bytes - Swipe consecutive distance [pixels] */
+#define TPS43_REG_SWIPE_ANGLE                0x06C7  /* 1 byte  - Swipe angle [64tan(deg)] */
+#define TPS43_REG_SCROLL_INITIAL_DISTANCE    0x06C8  /* 2 bytes - Scroll initial distance [pixels] */
+#define TPS43_REG_SCROLL_ANGLE               0x06CA  /* 1 byte  - Scroll angle [64tan(deg)] */
+#define TPS43_REG_ZOOM_INITIAL_DISTANCE      0x06CB  /* 2 bytes - Zoom initial distance [pixels] */
+#define TPS43_REG_ZOOM_CONSECUTIVE_DISTANCE  0x06CD  /* 2 bytes - Zoom consecutive distance [pixels] */
 
 /* Filter settings */
 // Read-write
@@ -211,6 +222,15 @@ struct tps43_config {
     int16_t filter_dynamic_upper;
     int16_t x_resolution;
     int16_t y_resolution;
+    int16_t swipe_initial_distance;
+    int16_t swipe_initial_time;
+    int16_t swipe_angle;
+    int16_t swipe_consecutive_distance;
+    int16_t swipe_consecutive_time;
+    int16_t scroll_initial_distance;
+    int16_t scroll_angle;
+    int16_t zoom_initial_distance;
+    int16_t zoom_consecutive_distance;
 };
 
 struct tps43_drv_data {
