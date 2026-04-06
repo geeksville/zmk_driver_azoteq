@@ -58,7 +58,21 @@ properties:
       XY dynamic filter upper speed threshold 
       Defines the speed above which maximum filtering is applied.
       Only written if explicitly set.
-      
+
+  x-resolution:
+    type: int
+    required: false
+    description: |
+      X axis resolution in pixels
+      Sets the trackpad X resolution. Only written if explicitly set.
+
+  y-resolution:
+    type: int
+    required: false
+    description: |
+      Y axis resolution in pixels
+      Sets the trackpad Y resolution. Only written if explicitly set.
+
   sensitivity:
     type: int
     required: false

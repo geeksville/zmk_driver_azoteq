@@ -44,13 +44,15 @@ CONFIG_INPUT_TPS43=y
 
         enable-power-management;
         
-        sensitivity = <110>;           /* 100% = normal state */
-        scroll-sensitivity = <10>;     /* 50% = normal state */
+        sensitivity = <100>;           /* 100% = normal state */
+        scroll-sensitivity = <50>;     /* 50% = normal state */
 
         filter-settings=<0x0B>;        /* See filter description in `available settings` */
-        filter-dynamic-bottom=<7>;     /* Dynamic filter bottom beta (optional) */
-        filter-dynamic-lower=<6>;      /* Dynamic filter lower speed (optional) */
-        filter-dynamic-upper=<0xFA>;   /* Dynamic filter upper speed (optional) */
+        // filter-dynamic-bottom=<7>;     /* Dynamic filter bottom beta (optional) */
+        // filter-dynamic-lower=<6>;      /* Dynamic filter lower speed (optional) */
+        // filter-dynamic-upper=<0xFA>;   /* Dynamic filter upper speed (optional) */
+        x-resolution=<2048>;            /* X resolution in pixels */
+        y-resolution=<1792>;            /* Y resolution in pixels */
 
         scroll;
         two-finger-tap;

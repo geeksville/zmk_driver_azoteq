@@ -62,6 +62,9 @@ extern "C" {
 #define TPS43_REG_XY_DYNAMIC_FILTER_LOWER   0x0638  /* 1 byte - XY dynamic filter lower speed */
 #define TPS43_REG_XY_DYNAMIC_FILTER_UPPER   0x0639  /* 2 bytes - XY dynamic filter upper speed */
 
+#define TPS43_REG_X_RESOLUTION              0x066E /* 2 bytes - X resolution */
+#define TPS43_REG_Y_RESOLUTION              0x0670 /* 2 bytes - Y resolution */
+
 /* Touch data - main coordinates */
 // Read-only
 #define TPS43_REG_NUM_FINGERS       0x0011  /* 1 byte */
@@ -206,6 +209,8 @@ struct tps43_config {
     int16_t filter_dynamic_bottom;
     int16_t filter_dynamic_lower;
     int16_t filter_dynamic_upper;
+    int16_t x_resolution;
+    int16_t y_resolution;
 };
 
 struct tps43_drv_data {

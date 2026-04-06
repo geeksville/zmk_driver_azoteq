@@ -601,6 +601,27 @@ static int tps43_configure_device(const struct device *dev) {
         LOG_INF("Dynamic filter upper set: 0x%04X", (uint16_t)config->filter_dynamic_upper);
     }
 
+    // resolution configuration (only if set in DT)
+    if (config->x_resolution != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_X_RESOLUTION,
+                                    (uint16_t)config->x_resolution);
+        if (ret != 0) {
+            LOG_WRN("X resolution write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("X resolution set: %d", (uint16_t)config->x_resolution);
+    }
+
+    if (config->y_resolution != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_Y_RESOLUTION,
+                                    (uint16_t)config->y_resolution);
+        if (ret != 0) {
+            LOG_WRN("Y resolution write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Y resolution set: %d", (uint16_t)config->y_resolution);
+    }
+
     // set configuration complete flag
     ret = tps43_i2c_write_reg8(dev, TPS43_REG_SYSTEM_CONFIG_0, TPS43_SETUP_COMPLETE | TPS43_WDT_ENABLE | TPS43_REATI);
     if (ret != 0) {
@@ -864,6 +885,18 @@ static void tps43_dump_registers(const struct device *dev) {
         LOG_INF("XY_DYNAMIC_FILTER_UPPER (0x%04X): 0x%04X", TPS43_REG_XY_DYNAMIC_FILTER_UPPER, reg16);
     }
 
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_X_RESOLUTION, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("X_RESOLUTION (0x%04X): 0x%04X", TPS43_REG_X_RESOLUTION, reg16);
+    }
+
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_Y_RESOLUTION, &reg16);
+    ret |= read_ret;
+    if (read_ret == 0) {
+        LOG_INF("Y_RESOLUTION (0x%04X): 0x%04X", TPS43_REG_Y_RESOLUTION, reg16);
+    }
+
     if (ret != 0) {
         LOG_WRN("error: some reads failed...");
     }
@@ -998,6 +1031,8 @@ static int tps43_init(const struct device *dev) {
         .filter_dynamic_bottom = DT_INST_PROP_OR(inst, filter_dynamic_bottom, -1),                    \
         .filter_dynamic_lower = DT_INST_PROP_OR(inst, filter_dynamic_lower, -1),                     \
         .filter_dynamic_upper = DT_INST_PROP_OR(inst, filter_dynamic_upper, -1),                     \
+        .x_resolution = DT_INST_PROP_OR(inst, x_resolution, -1),                                     \
+        .y_resolution = DT_INST_PROP_OR(inst, y_resolution, -1),                                     \
     };                                                                                               \
                                                                                                      \
     DEVICE_DT_INST_DEFINE(inst, tps43_init, NULL, &tps43_##inst##_drvdata, &tps43_##inst##_config,   \
