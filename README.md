@@ -13,6 +13,11 @@ This driver should work with any IQS5XX-based trackpad (TPS43 or TPS65).
 - Vertical scrolling.
 - Horizontal scrolling.
 
+## Gesture support
+
+- Use three fingers.
+- Left/right/up/down swipe send INPUT_BTN_WEST/EAST/NORTH/SOUTH events.  You can map them to other keys/actions as you wish in your dts file.
+
 ## Usage
 
 - In the configuration file (for the appropriate half), add `CONFIG_INPUT_TPS43` to enable the driver

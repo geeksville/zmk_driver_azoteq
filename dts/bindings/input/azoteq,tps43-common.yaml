@@ -108,7 +108,7 @@ properties:
   swipes:
     type: boolean
     required: false
-    description: Enable swipe processing. When enabled, tracks three-finger swipes
+    description: Enable swipe processing. When enabled, tracks three-finger swipes as INPUT_BTN_NORTH/SOUTH/EAST/WEST.
 
   switch-xy:
     type: boolean

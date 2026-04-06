@@ -415,14 +415,24 @@ static void tps43_work_handler(struct k_work *work) {
                 }
                 if (num_fingers == 3) {
                     if (rel_x < 0) {
-                        LOG_INF("3-finger swipe left - mouse button 6");
-                        input_report_key(dev, INPUT_BTN_6, 1, true, K_FOREVER);
-                        input_report_key(dev, INPUT_BTN_6, 0, true, K_FOREVER);
+                        LOG_INF("3-finger swipe left - INPUT_BTN_WEST");
+                        input_report_key(dev, INPUT_BTN_WEST, 1, true, K_FOREVER);
+                        input_report_key(dev, INPUT_BTN_WEST, 0, true, K_FOREVER);
                     }
                     if (rel_x > 0) {
-                        LOG_INF("3-finger swipe right - mouse button 7");
-                        input_report_key(dev, INPUT_BTN_7, 1, true, K_FOREVER);
-                        input_report_key(dev, INPUT_BTN_7, 0, true, K_FOREVER);
+                        LOG_INF("3-finger swipe right - INPUT_BTN_EAST");
+                        input_report_key(dev, INPUT_BTN_EAST, 1, true, K_FOREVER);
+                        input_report_key(dev, INPUT_BTN_EAST, 0, true, K_FOREVER);
+                    }
+                    if (rel_y < 0) {
+                        LOG_INF("3-finger swipe up - INPUT_BTN_NORTH");
+                        input_report_key(dev, INPUT_BTN_NORTH, 1, true, K_FOREVER);
+                        input_report_key(dev, INPUT_BTN_NORTH, 0, true, K_FOREVER);
+                    }
+                    if (rel_y > 0) {
+                        LOG_INF("3-finger swipe down - INPUT_BTN_SOUTH");
+                        input_report_key(dev, INPUT_BTN_SOUTH, 1, true, K_FOREVER);
+                        input_report_key(dev, INPUT_BTN_SOUTH, 0, true, K_FOREVER);
                     }
                 }
             }
