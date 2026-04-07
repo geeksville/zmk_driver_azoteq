@@ -83,7 +83,13 @@ properties:
     type: int
     required: false
     default: 50
-    description: Scroll sensitivity percentage (50 = normal, higher = more sensitive)
+    description: Scroll sensitivity percentage (100 = normal, higher = more sensitive)
+
+  zoom-sensitivity:
+    type: int
+    required: false
+    default: 100
+    description: Zoom sensitivity percentage (100 = normal, higher = more sensitive)
 
   enable-power-management:
     type: boolean
@@ -105,10 +111,15 @@ properties:
     required: false
     description: Enable scroll gesture
 
+  zoom:
+    type: boolean
+    required: false
+    description: Enable zoom gesture (pinch-to-zoom)
+
   swipes:
     type: boolean
     required: false
-    description: Enable swipe processing. When enabled, tracks three-finger swipes as INPUT_BTN_NORTH/SOUTH/EAST/WEST.
+    description: Enable swipe processing. When enabled, tracks swipes as INPUT_BTN_NORTH/SOUTH/EAST/WEST.
 
   switch-xy:
     type: boolean

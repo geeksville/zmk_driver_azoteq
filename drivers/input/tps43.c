@@ -345,7 +345,8 @@ static void tps43_work_handler(struct k_work *work) {
     struct tps43_drv_data *drv_data = CONTAINER_OF(work, struct tps43_drv_data, work);
     const struct device *dev = drv_data->dev;
     const struct tps43_config *config = dev->config;
-    bool is_scroll_active = drv_data->scroll_active;
+    bool is_scroll_active = false;
+    bool is_zoom_active = false;
     bool is_drag_active = drv_data->drag_active;
     int ret;
     
@@ -417,15 +418,59 @@ static void tps43_work_handler(struct k_work *work) {
             input_report_key(dev, INPUT_BTN_0, 0, true, K_FOREVER);   // release + sync
         }
         if (gestures_events[1] & TPS43_SCROLL) {
-            LOG_INF("Scroll detected - Scrolling");
             // set scroll flag for processing in tp_movement block
             is_scroll_active = true;
         }
+        if (gestures_events[1] & TPS43_ZOOM) {
+            // set zoom flag for processing in tp_movement block
+            is_zoom_active = true;
+        }
     }
 
-    if (sys_info & TPS43_TP_MOVEMENT) {
-        // Send cursor movement
-        if (rel_x != 0 || rel_y != 0) {
+    // if (sys_info & TPS43_TP_MOVEMENT) {
+    if (rel_x != 0 || rel_y != 0) {
+        // Handle three-finger swipes
+        if (config->swipes) {
+            uint8_t num_fingers = 0;
+            ret = tps43_i2c_read_reg8(dev, TPS43_REG_NUM_FINGERS, &num_fingers);
+            if (ret < 0) {
+                LOG_ERR("NUM_FINGERS read error: %d", ret);
+                goto done;
+            }
+            if (num_fingers == 3) {
+                LOG_INF("Three-finger movement - checking for swipe");
+                tps43_handle_swipe(dev, rel_x, rel_y);
+            }
+        }
+
+        if (is_scroll_active) {
+            // Scroll processing: keep only dominant axis
+            if (abs(rel_x) > abs(rel_y)) {
+                // Horizontal scroll
+                if (config->invert_scroll_x) {
+                    rel_x = -rel_x;
+                }
+                int16_t wheel = (rel_x * config->scroll_sensitivity) / 100;
+                LOG_INF("Scrolling %d horizontally", wheel);
+                input_report_rel(dev, INPUT_REL_HWHEEL, wheel, true, K_FOREVER);
+            } else {
+                // Vertical scroll
+                if (config->invert_scroll_y) {
+                    rel_y = -rel_y;
+                }
+                int16_t wheel = (rel_y * config->scroll_sensitivity) / 100;
+                LOG_INF("Scrolling %d vertically", wheel);
+                input_report_rel(dev, INPUT_REL_WHEEL, wheel, true, K_FOREVER);
+            }
+            is_scroll_active = false;
+        } else if (is_zoom_active) {
+            // Zoom processing: the zoom amount comes in via rel_x
+            int16_t zoom_delta = (rel_x * config->zoom_sensitivity) / 100;
+            LOG_INF("Zooming %d, rel_x=%d", zoom_delta, rel_x);
+            input_report_rel(dev, INPUT_REL_MISC, zoom_delta, true, K_FOREVER);
+            is_zoom_active = false;
+        } else {
+            // Normal cursor movement
             if (rel_x != 0 ) {
                 int32_t scaled_x = ((int32_t)rel_x * config->sensitivity) / 100;
                 rel_x = (int16_t)CLAMP(scaled_x, INT16_MIN, INT16_MAX);
@@ -436,49 +481,13 @@ static void tps43_work_handler(struct k_work *work) {
             }
             LOG_INF("Sending movement: dx=%d, dy=%d", rel_x, rel_y);
 
-            // Handle three-finger swipes
-            if (config->swipes) {
-                uint8_t num_fingers = 0;
-                ret = tps43_i2c_read_reg8(dev, TPS43_REG_NUM_FINGERS, &num_fingers);
-                if (ret < 0) {
-                    LOG_ERR("NUM_FINGERS read error: %d", ret);
-                    goto done;
-                }
-                if (num_fingers == 3) {
-                    LOG_INF("Three-finger movement - checking for swipe");
-                    tps43_handle_swipe(dev, rel_x, rel_y);
-                }
-            }
-
-            if (is_scroll_active) {
-                // Scroll processing: keep only dominant axis
-                if (abs(rel_x) > abs(rel_y)) {
-                    // Horizontal scroll
-                    if (config->invert_scroll_x) {
-                        rel_x = -rel_x;
-                    }
-                    int16_t wheel = (rel_x * config->scroll_sensitivity) / 100;
-                    input_report_rel(dev, INPUT_REL_HWHEEL, wheel, true, K_FOREVER);
-                } else {
-                    // Vertical scroll
-                    if (config->invert_scroll_y) {
-                        rel_y = -rel_y;
-                    }
-                    int16_t wheel = (rel_y * config->scroll_sensitivity) / 100;
-                    input_report_rel(dev, INPUT_REL_WHEEL, wheel, true, K_FOREVER);
-                }
-                is_scroll_active = false;
-            } else {
-                // Normal cursor movement
-                input_report_rel(dev, INPUT_REL_X, rel_x, false, K_FOREVER);
-                input_report_rel(dev, INPUT_REL_Y, rel_y, true, K_FOREVER);
-            }
+            input_report_rel(dev, INPUT_REL_X, rel_x, false, K_FOREVER);
+            input_report_rel(dev, INPUT_REL_Y, rel_y, true, K_FOREVER);
         }
     }
 
 done:
     // Save for next call
-    drv_data->scroll_active = is_scroll_active;
     drv_data->drag_active = is_drag_active;
     tps43_end_communication_window(dev);
     
@@ -500,7 +509,6 @@ static int tps43_reset_values(const struct device *dev) {
 
     drv_data->device_ready = false;
     drv_data->initialized = false;
-    drv_data->scroll_active = false;
     drv_data->drag_active = false;
 
     LOG_INF("Values reset");
@@ -571,10 +579,11 @@ static int tps43_configure_device(const struct device *dev) {
     }
 
     // enable multi-gestures
-    if (config->two_finger_tap || config->scroll) {
+    if (config->two_finger_tap || config->scroll || config->zoom) {
         uint8_t multi_gestures = 0;
         multi_gestures |= config->two_finger_tap ? TPS43_TWO_FINGER_TAP : 0;
         multi_gestures |= config->scroll ? TPS43_SCROLL : 0;
+        multi_gestures |= config->zoom ? TPS43_ZOOM : 0;
         
         ret = tps43_i2c_write_reg8(dev, TPS43_REG_MULTI_FINGER_GESTURES, multi_gestures);
         if (ret != 0) {
@@ -1194,7 +1203,6 @@ static int tps43_init(const struct device *dev) {
     static struct tps43_drv_data tps43_##inst##_drvdata = {                                          \
         .device_ready = false,                                                                       \
         .initialized = false,                                                                        \
-        .scroll_active = false,                                                                      \
         .drag_active = false,                                                                        \
         .suspended = false,                                                                          \
     };                                                                                               \
@@ -1207,6 +1215,7 @@ static int tps43_init(const struct device *dev) {
         .press_and_hold = DT_INST_PROP(inst, press_and_hold),                                        \
         .two_finger_tap = DT_INST_PROP(inst, two_finger_tap),                                        \
         .scroll = DT_INST_PROP(inst, scroll),                                                        \
+        .zoom = DT_INST_PROP(inst, zoom),                                                            \
         .swipes = DT_INST_PROP(inst, swipes),                                                        \
         .invert_x = DT_INST_PROP(inst, invert_x),                                                    \
         .invert_y = DT_INST_PROP(inst, invert_y),                                                    \
@@ -1214,7 +1223,8 @@ static int tps43_init(const struct device *dev) {
         .invert_scroll_x = DT_INST_PROP(inst, invert_scroll_x),                                      \
         .invert_scroll_y = DT_INST_PROP(inst, invert_scroll_y),                                      \
         .sensitivity = DT_INST_PROP_OR(inst, sensitivity, 100),                                      \
-        .scroll_sensitivity = DT_INST_PROP_OR(inst, scroll_sensitivity, 50),                         \
+        .scroll_sensitivity = DT_INST_PROP_OR(inst, scroll_sensitivity, 100),                        \
+        .zoom_sensitivity = DT_INST_PROP_OR(inst, zoom_sensitivity, 100),                            \
         .enable_power_management = DT_INST_PROP_OR(inst, enable_power_management, true),             \
         .filter_settings = DT_INST_PROP_OR(inst, filter_settings, 0x0F),                             \
         .filter_dynamic_bottom = DT_INST_PROP_OR(inst, filter_dynamic_bottom, -1),                    \

@@ -204,6 +204,7 @@ struct tps43_config {
     bool press_and_hold;
     bool two_finger_tap;
     bool scroll;
+    bool zoom;
     bool swipes;            
     bool invert_x;
     bool invert_y;
@@ -213,6 +214,7 @@ struct tps43_config {
 
     int16_t sensitivity;
     int16_t scroll_sensitivity;
+    int16_t zoom_sensitivity;
 
     bool enable_power_management;
 
@@ -241,7 +243,6 @@ struct tps43_drv_data {
 
     bool device_ready;
     bool initialized;
-    bool scroll_active;
     bool drag_active;
     bool suspended;         
 };

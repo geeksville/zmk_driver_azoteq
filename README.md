@@ -10,13 +10,9 @@ This driver should work with any IQS5XX-based trackpad (TPS43 or TPS65).
 - Single tap: registered as left click.
 - Two-finger tap: registered as right click.
 - Press and hold: registered as continuous left click (drag).
-- Vertical scrolling.
-- Horizontal scrolling.
-
-## Gesture support
-
-- Either 3-finger or 1-finger swiping is supported.
-- Left/right/up/down swipe send INPUT_BTN_WEST/EAST/NORTH/SOUTH events.  You can map them to other keys/actions as you wish in your dts file.
+- Vertical and horizontal scrolling - Modern 'gesture based' two finger swiping
+- Left/right/up/down swipe send INPUT_BTN_WEST/EAST/NORTH/SOUTH events.  You can map them to other keys/actions as you wish in your dts file. (Either 3-finger or 1-finger directional swiping is supported)
+- Pinch-to-zoom (reported as movement on the INPUT_REL_MISC 'wheel' - you can add dts rules to map this to something your apps can understand)
 
 ## Usage
 
@@ -51,6 +47,7 @@ CONFIG_INPUT_TPS43=y
         
         sensitivity = <100>;           /* 100% = normal state */
         scroll-sensitivity = <50>;     /* 50% = normal state */
+        zoom-sensitivity = <50>;       /* 50% = normal state */
 
         filter-settings=<0x0B>;        /* See filter description in `available settings` */
         // filter-dynamic-bottom=<7>;     /* Dynamic filter bottom beta (optional) */
@@ -61,19 +58,20 @@ CONFIG_INPUT_TPS43=y
 
         // swipe-initial-distance=<500>;          /* Swipe initial distance in px (optional) */
         // swipe-initial-time=<200>;              /* Swipe initial time in ms (optional) */
-        // swipe-angle=<20>;                      /* Swipe angle in degrees (optional) */
+        // swipe-angle=<20>;                      /* Max swipe angle in degrees (optional) */
         // swipe-consecutive-distance=<200>;      /* Swipe consecutive distance in px (optional) */
         // swipe-consecutive-time=<150>;          /* Swipe consecutive time in ms (optional) */
         // scroll-initial-distance=<100>;         /* Scroll initial distance in px (optional) */
-        // scroll-angle=<30>;                     /* Scroll angle in degrees (optional) */
+        // scroll-angle=<30>;                     /* Max scroll angle in degrees (optional) */
         // zoom-initial-distance=<100>;           /* Zoom initial distance in px (optional) */
-        // zoom-consecutive-distance=<200>;       /* Zoom consecutive distance in px (optional) */
+        // zoom-consecutive-distance=<50>;        /* Zoom consecutive distance in px (optional) */
 
         scroll;
         two-finger-tap;
         single-tap;
         press-and-hold;
         swipes;
+        zoom;
 
         switch-xy;
         invert-scroll-y;
