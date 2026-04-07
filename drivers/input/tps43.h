@@ -42,7 +42,7 @@ extern "C" {
 #define TPS43_REG_REATI_UPPER_LIMIT 0x0574 /* 1 byte - ATI reattempt upper limit */
 #define TPS43_REG_MAX_COUNT_LIMIT   0x0575  /* 2 byte - ATI max count limit */
 #define TPS43_REG_ATI_RETRY_TIME    0x0577  /* 1 byte - ATI retry time [s] */
-#define TPS43_REG_REPPORT_RATE_ACTIVE 0x057A /* 2 byte - Report rate active [ms]*/
+#define TPS43_REG_REPORT_RATE_ACTIVE 0x057A /* 2 byte - Report rate active [ms]*/
 #define TPS43_REG_REPORT_RATE_IDLE_TOUCH 0x057C  /* 2 byte - Report rate idle touch [ms] */
 #define TPS43_REG_REPORT_RATE_IDLE  0x057E  /* 2 byte - Report rate idle [ms] */
 #define TPS43_REG_REPORT_RATE_LP1   0x0580  /* 2 byte - Report rate lp1 [ms] */
@@ -106,6 +106,7 @@ extern "C" {
 /* ============================================================ */
 
 #define TPS43_SHOW_RESET            BIT(7)      /* Flag check on system reset */
+#define TPS43_CHARGING_MODE_MASK    0x07        /* Charging mode (bits 0-3) */
 
 /* ============================================================ */
 /* System information 1 (0x0010) - Status flags - 8 bits */
@@ -233,6 +234,23 @@ struct tps43_config {
     int16_t scroll_angle;
     int16_t zoom_initial_distance;
     int16_t zoom_consecutive_distance;
+
+    int16_t ati_target;
+    int16_t ref_drift_limit;
+    int16_t reati_lower_limit;
+    int16_t reati_upper_limit;
+    int16_t max_count_limit;
+    int16_t ati_retry_time;
+    int16_t report_rate_active;
+    int16_t report_rate_idle_touch;
+    int16_t report_rate_idle;
+    int16_t report_rate_lp1;
+    int16_t report_rate_lp2;
+    int16_t timeout_active;
+    int16_t timeout_idle_touch;
+    int16_t timeout_idle;
+    int16_t timeout_lp1;
+    int16_t ref_update_time;
 };
 
 struct tps43_drv_data {

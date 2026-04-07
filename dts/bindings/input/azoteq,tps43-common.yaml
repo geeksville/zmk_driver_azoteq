@@ -229,3 +229,145 @@ properties:
       Sets the distance threshold for consecutive zoom segments.
       Written to the ZOOM_CONSECUTIVE_DISTANCE register (0x06CD).
       Only written if explicitly set.
+
+  ati-target:
+    type: int
+    required: false
+    description: |
+      ATI target value (2 bytes).
+      Sets the target count for the ATI (Automatic Tuning Implementation) process.
+      Written to the ATI_TARGET register (0x056D).
+      Only written if explicitly set.
+
+  ref-drift-limit:
+    type: int
+    required: false
+    description: |
+      ATI reference drift limit (1 byte).
+      Controls the allowed drift of the reference level before re-ATI is triggered.
+      Written to the REF_DRIFT_LIMIT register (0x0571).
+      Only written if explicitly set.
+
+  reati-lower-limit:
+    type: int
+    required: false
+    description: |
+      Re-ATI lower count limit (1 byte).
+      Sets the lower threshold for triggering automatic re-ATI.
+      Written to the REATI_LOWER_LIMIT register (0x0573).
+      Only written if explicitly set.
+
+  reati-upper-limit:
+    type: int
+    required: false
+    description: |
+      Re-ATI upper count limit (1 byte).
+      Sets the upper threshold for triggering automatic re-ATI.
+      Written to the REATI_UPPER_LIMIT register (0x0574).
+      Only written if explicitly set.
+
+  max-count-limit:
+    type: int
+    required: false
+    description: |
+      ATI max count limit (2 bytes).
+      Sets the maximum count value allowed during ATI.
+      Written to the MAX_COUNT_LIMIT register (0x0575).
+      Only written if explicitly set.
+
+  ati-retry-time:
+    type: int
+    required: false
+    description: |
+      ATI retry time in seconds (1 byte).
+      Sets the minimum time between automatic re-ATI attempts.
+      Written to the ATI_RETRY_TIME register (0x0577).
+      Only written if explicitly set.
+
+  report-rate-active:
+    type: int
+    required: false
+    description: |
+      Report rate in active mode in milliseconds (2 bytes).
+      Controls how frequently the device reports data when actively touched.
+      Written to the REPORT_RATE_ACTIVE register (0x057A).
+      Only written if explicitly set.
+
+  report-rate-idle-touch:
+    type: int
+    required: false
+    description: |
+      Report rate in idle-touch mode in milliseconds (2 bytes).
+      Controls the reporting frequency when idle with touch contact.
+      Written to the REPORT_RATE_IDLE_TOUCH register (0x057C).
+      Only written if explicitly set.
+
+  report-rate-idle:
+    type: int
+    required: false
+    description: |
+      Report rate in idle mode in milliseconds (2 bytes).
+      Controls the reporting frequency in idle mode (no touch).
+      Written to the REPORT_RATE_IDLE register (0x057E).
+      Only written if explicitly set.
+
+  report-rate-lp1:
+    type: int
+    required: false
+    description: |
+      Report rate in low-power mode 1 in milliseconds (2 bytes).
+      Written to the REPORT_RATE_LP1 register (0x0580).
+      Only written if explicitly set.
+
+  report-rate-lp2:
+    type: int
+    required: false
+    description: |
+      Report rate in low-power mode 2 in milliseconds (2 bytes).
+      Written to the REPORT_RATE_LP2 register (0x0582).
+      Only written if explicitly set.
+
+  timeout-active:
+    type: int
+    required: false
+    description: |
+      Timeout for active mode in seconds (1 byte).
+      Time before transitioning from active to idle-touch mode.
+      Written to the TIMEOUT_ACTIVE register (0x0584).
+      Only written if explicitly set.
+
+  timeout-idle-touch:
+    type: int
+    required: false
+    description: |
+      Timeout for idle-touch mode in seconds (1 byte).
+      Time before transitioning from idle-touch to idle mode.
+      Written to the TIMEOUT_IDLE_TOUCH register (0x0585).
+      Only written if explicitly set.
+
+  timeout-idle:
+    type: int
+    required: false
+    description: |
+      Timeout for idle mode in seconds (1 byte).
+      Time before transitioning from idle to LP1 mode.
+      Written to the TIMEOUT_IDLE register (0x0586).
+      Only written if explicitly set.
+
+  timeout-lp1:
+    type: int
+    required: false
+    description: |
+      Timeout for low-power mode 1 in seconds (1 byte).
+      Time before transitioning from LP1 to LP2 mode.
+      Written to the TIMEOUT_LP1 register (0x0587).
+      Only written if explicitly set.
+
+  ref-update-time:
+    type: int
+    required: false
+    description: |
+      Reference update time in seconds (1 byte).
+      Controls how frequently the reference level is updated.
+      Written to the REF_UPDATE_TIME register (0x0588).
+      Only written if explicitly set.

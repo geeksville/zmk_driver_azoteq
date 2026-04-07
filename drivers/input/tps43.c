@@ -201,6 +201,22 @@ static int tps43_i2c_write_reg8(const struct device *dev, uint16_t reg, uint8_t 
      k_work_submit(&drv_data->work);
  }
  
+
+/** Dump charging state */
+static void tps43_dump_status(const struct device *dev) {
+
+    uint8_t sys_info = 0;
+    tps43_i2c_read_reg8(dev, TPS43_REG_SYSTEM_INFO_0, &sys_info);
+    LOG_INF("Charging state: 0x%02X", sys_info & TPS43_CHARGING_MODE_MASK); // for debugging charging mode
+}
+
+/** Force communication start with the trackpad.  See datasheet 8.8.2 */
+static void tps43_force_communication(const struct device *dev) {
+    // Do a bogus read where we don't care about a possible NACK
+    uint8_t control_reg = 0;
+    tps43_i2c_read_reg8_w_err(dev, TPS43_REG_SYSTEM_CONTROL_1, &control_reg, false);
+}
+
 /**
  * @brief Internal function to put trackpad into suspend/resume mode
  * 
@@ -244,27 +260,19 @@ static int tps43_set_suspend_internal(const struct device *dev, bool suspend, bo
     
     // When exiting suspend, first transaction will return NACK (section 7.3.1)
     if (drv_data->suspended && !suspend) {
-        ret = tps43_i2c_read_reg8_w_err(dev, TPS43_REG_SYSTEM_CONTROL_1, &control_reg, false);
-        k_sleep(K_MSEC(200));
+        tps43_force_communication(dev);
+        k_sleep(K_MSEC(1)); // need at least 200uS before 2nd read
         LOG_INF("I2C Wake: device awakened from suspend");
         
         // After wake-up, read register again
-        ret = tps43_i2c_read_reg8_w_err(dev, TPS43_REG_SYSTEM_CONTROL_1, &control_reg, false);
+        ret = tps43_i2c_read_reg8(dev, TPS43_REG_SYSTEM_CONTROL_1, &control_reg);
 
     } else if (!drv_data->suspended) {
-        // Read current value only if not in suspend
-        ret = tps43_i2c_read_reg8_w_err(dev, TPS43_REG_SYSTEM_CONTROL_1, &control_reg, false);
-        if (ret != 0) {
-            // If error -5 (EIO) when trying to enter suspend - device already in suspend
-            if (ret == -EIO && suspend) {
-                LOG_INF("Device already in suspend (I2C error)");
-                drv_data->suspended = true;
-                ret = 0;
-                goto done;
-            }
-            LOG_ERR("SYSTEM_CONTROL_1 read error: %d", ret);
-            goto done;
-        }
+        tps43_force_communication(dev);
+        tps43_dump_status(dev); // for debugging power management behavior
+
+        // Read current value 
+        ret = tps43_i2c_read_reg8(dev, TPS43_REG_SYSTEM_CONTROL_1, &control_reg);
     }
 
     if (suspend) {
@@ -360,13 +368,6 @@ static void tps43_work_handler(struct k_work *work) {
     // This prevents conflicts during simultaneous trackpad access
     k_sem_take(&drv_data->lock, K_FOREVER);
 
-    uint8_t sys_info = 0;
-    ret = tps43_i2c_read_reg8(dev, TPS43_REG_SYSTEM_INFO_1, &sys_info);
-    if (ret < 0) {
-        LOG_ERR("System information read error: %d", ret);
-        goto done;
-    }
-
     uint8_t gestures_events[2];
     ret = read_sequence_registers(dev, TPS43_REG_GESTURE_EVENTS_0, &gestures_events, 2);
     if (ret < 0) {
@@ -427,7 +428,6 @@ static void tps43_work_handler(struct k_work *work) {
         }
     }
 
-    // if (sys_info & TPS43_TP_MOVEMENT) {
     if (rel_x != 0 || rel_y != 0) {
         // Handle three-finger swipes
         if (config->swipes) {
@@ -748,6 +748,169 @@ static int tps43_configure_device(const struct device *dev) {
         LOG_INF("Zoom consecutive distance set: %u px", (uint16_t)config->zoom_consecutive_distance);
     }
 
+    // ATI configuration (only if set in DT)
+    if (config->ati_target != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_ATI_TARGET,
+                                    (uint16_t)config->ati_target);
+        if (ret != 0) {
+            LOG_WRN("ATI target write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("ATI target set: %u", (uint16_t)config->ati_target);
+    }
+
+    if (config->ref_drift_limit != -1) {
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_REF_DRIFT_LIMIT,
+                                   (uint8_t)config->ref_drift_limit);
+        if (ret != 0) {
+            LOG_WRN("Ref drift limit write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Ref drift limit set: %u", (uint8_t)config->ref_drift_limit);
+    }
+
+    if (config->reati_lower_limit != -1) {
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_REATI_LOWER_LIMIT,
+                                   (uint8_t)config->reati_lower_limit);
+        if (ret != 0) {
+            LOG_WRN("REATI lower limit write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("REATI lower limit set: %u", (uint8_t)config->reati_lower_limit);
+    }
+
+    if (config->reati_upper_limit != -1) {
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_REATI_UPPER_LIMIT,
+                                   (uint8_t)config->reati_upper_limit);
+        if (ret != 0) {
+            LOG_WRN("REATI upper limit write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("REATI upper limit set: %u", (uint8_t)config->reati_upper_limit);
+    }
+
+    if (config->max_count_limit != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_MAX_COUNT_LIMIT,
+                                    (uint16_t)config->max_count_limit);
+        if (ret != 0) {
+            LOG_WRN("Max count limit write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Max count limit set: %u", (uint16_t)config->max_count_limit);
+    }
+
+    if (config->ati_retry_time != -1) {
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_ATI_RETRY_TIME,
+                                   (uint8_t)config->ati_retry_time);
+        if (ret != 0) {
+            LOG_WRN("ATI retry time write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("ATI retry time set: %u s", (uint8_t)config->ati_retry_time);
+    }
+
+    // Report rate configuration (only if set in DT)
+    if (config->report_rate_active != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_REPORT_RATE_ACTIVE,
+                                    (uint16_t)config->report_rate_active);
+        if (ret != 0) {
+            LOG_WRN("Report rate active write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Report rate active set: %u ms", (uint16_t)config->report_rate_active);
+    }
+
+    if (config->report_rate_idle_touch != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_REPORT_RATE_IDLE_TOUCH,
+                                    (uint16_t)config->report_rate_idle_touch);
+        if (ret != 0) {
+            LOG_WRN("Report rate idle touch write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Report rate idle touch set: %u ms", (uint16_t)config->report_rate_idle_touch);
+    }
+
+    if (config->report_rate_idle != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_REPORT_RATE_IDLE,
+                                    (uint16_t)config->report_rate_idle);
+        if (ret != 0) {
+            LOG_WRN("Report rate idle write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Report rate idle set: %u ms", (uint16_t)config->report_rate_idle);
+    }
+
+    if (config->report_rate_lp1 != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_REPORT_RATE_LP1,
+                                    (uint16_t)config->report_rate_lp1);
+        if (ret != 0) {
+            LOG_WRN("Report rate LP1 write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Report rate LP1 set: %u ms", (uint16_t)config->report_rate_lp1);
+    }
+
+    if (config->report_rate_lp2 != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_REPORT_RATE_LP2,
+                                    (uint16_t)config->report_rate_lp2);
+        if (ret != 0) {
+            LOG_WRN("Report rate LP2 write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Report rate LP2 set: %u ms", (uint16_t)config->report_rate_lp2);
+    }
+
+    // Timeout configuration (only if set in DT)
+    if (config->timeout_active != -1) {
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_TIMEOUT_ACTIVE,
+                                   (uint8_t)config->timeout_active);
+        if (ret != 0) {
+            LOG_WRN("Timeout active write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Timeout active set: %u s", (uint8_t)config->timeout_active);
+    }
+
+    if (config->timeout_idle_touch != -1) {
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_TIMEOUT_IDLE_TOUCH,
+                                   (uint8_t)config->timeout_idle_touch);
+        if (ret != 0) {
+            LOG_WRN("Timeout idle touch write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Timeout idle touch set: %u s", (uint8_t)config->timeout_idle_touch);
+    }
+
+    if (config->timeout_idle != -1) {
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_TIMEOUT_IDLE,
+                                   (uint8_t)config->timeout_idle);
+        if (ret != 0) {
+            LOG_WRN("Timeout idle write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Timeout idle set: %u s", (uint8_t)config->timeout_idle);
+    }
+
+    if (config->timeout_lp1 != -1) {
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_TIMEOUT_LP1,
+                                   (uint8_t)config->timeout_lp1);
+        if (ret != 0) {
+            LOG_WRN("Timeout LP1 write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Timeout LP1 set: %u s", (uint8_t)config->timeout_lp1);
+    }
+
+    if (config->ref_update_time != -1) {
+        ret = tps43_i2c_write_reg8(dev, TPS43_REG_REF_UPDATE_TIME,
+                                   (uint8_t)config->ref_update_time);
+        if (ret != 0) {
+            LOG_WRN("Ref update time write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Ref update time set: %u s", (uint8_t)config->ref_update_time);
+    }
+
     // set configuration complete flag
     ret = tps43_i2c_write_reg8(dev, TPS43_REG_SYSTEM_CONFIG_0, TPS43_SETUP_COMPLETE | TPS43_WDT_ENABLE | TPS43_REATI);
     if (ret != 0) {
@@ -909,10 +1072,10 @@ static void tps43_dump_registers(const struct device *dev) {
         LOG_INF("ATI_RETRY_TIME (0x%04X): 0x%02X", TPS43_REG_ATI_RETRY_TIME, reg8);
     }
 
-    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_REPPORT_RATE_ACTIVE, &reg16);
+    read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_REPORT_RATE_ACTIVE, &reg16);
     ret |= read_ret;
     if (read_ret == 0) {
-        LOG_INF("REPPORT_RATE_ACTIVE (0x%04X): 0x%04X", TPS43_REG_REPPORT_RATE_ACTIVE, reg16);
+        LOG_INF("REPORT_RATE_ACTIVE (0x%04X): 0x%04X", TPS43_REG_REPORT_RATE_ACTIVE, reg16);
     }
 
     read_ret = tps43_i2c_read_reg16(dev, TPS43_REG_REPORT_RATE_IDLE_TOUCH, &reg16);
@@ -1241,6 +1404,22 @@ static int tps43_init(const struct device *dev) {
         .scroll_angle = DT_INST_PROP_OR(inst, scroll_angle, -1),                                     \
         .zoom_initial_distance = DT_INST_PROP_OR(inst, zoom_initial_distance, -1),                   \
         .zoom_consecutive_distance = DT_INST_PROP_OR(inst, zoom_consecutive_distance, -1),           \
+        .ati_target = DT_INST_PROP_OR(inst, ati_target, -1),                                         \
+        .ref_drift_limit = DT_INST_PROP_OR(inst, ref_drift_limit, -1),                               \
+        .reati_lower_limit = DT_INST_PROP_OR(inst, reati_lower_limit, -1),                           \
+        .reati_upper_limit = DT_INST_PROP_OR(inst, reati_upper_limit, -1),                           \
+        .max_count_limit = DT_INST_PROP_OR(inst, max_count_limit, -1),                               \
+        .ati_retry_time = DT_INST_PROP_OR(inst, ati_retry_time, -1),                                 \
+        .report_rate_active = DT_INST_PROP_OR(inst, report_rate_active, -1),                         \
+        .report_rate_idle_touch = DT_INST_PROP_OR(inst, report_rate_idle_touch, -1),                 \
+        .report_rate_idle = DT_INST_PROP_OR(inst, report_rate_idle, -1),                             \
+        .report_rate_lp1 = DT_INST_PROP_OR(inst, report_rate_lp1, -1),                               \
+        .report_rate_lp2 = DT_INST_PROP_OR(inst, report_rate_lp2, -1),                               \
+        .timeout_active = DT_INST_PROP_OR(inst, timeout_active, -1),                                 \
+        .timeout_idle_touch = DT_INST_PROP_OR(inst, timeout_idle_touch, -1),                         \
+        .timeout_idle = DT_INST_PROP_OR(inst, timeout_idle, -1),                                     \
+        .timeout_lp1 = DT_INST_PROP_OR(inst, timeout_lp1, -1),                                       \
+        .ref_update_time = DT_INST_PROP_OR(inst, ref_update_time, -1),                               \
     };                                                                                               \
                                                                                                      \
     DEVICE_DT_INST_DEFINE(inst, tps43_init, NULL, &tps43_##inst##_drvdata, &tps43_##inst##_config,   \
