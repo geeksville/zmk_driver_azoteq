@@ -1,5 +1,7 @@
 # ZMK Driver for Azoteq IQS5XX Trackpads
 
+Note: This driver was originally developed by @stelmakhdigital and I wanted to add some features/bug fixes.  But I don't read Russian, so I asked my AI buddy to make this English [translated](https://github.com/geeksville/zmk_driver_azoteq/commit/4c56195658bbf31851b9892c63f758f50ea48d4d) version.  I hope you find it useful.  It now seems to work well for me.  If you see problems please open issues and I'll do what I can to help.
+
 ## Compatibility
 
 This driver should work with any IQS5XX-based trackpad (TPS43 or TPS65).
