@@ -366,7 +366,7 @@ properties:
     type: int
     required: false
     description: |
-      Timeout for low-power mode 1 in seconds (1 byte).
+      Timeout for low-power mode 1 in 20 sec units (1 byte). i.e. 3 means 60 seconds.
       Time before transitioning from LP1 to LP2 mode.
       Written to the TIMEOUT_LP1 register (0x0587).
       Only written if explicitly set.
