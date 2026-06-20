@@ -368,20 +368,30 @@ static void tps43_work_handler(struct k_work *work) {
     // This prevents conflicts during simultaneous trackpad access
     k_sem_take(&drv_data->lock, K_FOREVER);
 
-    uint8_t gestures_events[2];
-    ret = read_sequence_registers(dev, TPS43_REG_GESTURE_EVENTS_0, &gestures_events, 2);
+    /*
+     * Read the whole contiguous block from GESTURE_EVENTS_0 through REL_Y in a
+     * single I2C transaction instead of issuing several independent reads.
+     * This is much cheaper on the bus. Byte offsets into the buffer:
+     *   [0] GESTURE_EVENTS_0   (0x000D)
+     *   [1] GESTURE_EVENTS_1   (0x000E)
+     *   [2] SYSTEM_INFO_0      (0x000F)
+     *   [3] SYSTEM_INFO_1      (0x0010)
+     *   [4] NUM_FINGERS        (0x0011)
+     *   [5..6] REL_X           (0x0012, big-endian)
+     *   [7..8] REL_Y           (0x0014, big-endian)
+     */
+    uint8_t touch_data[(TPS43_REG_REL_Y + 2) - TPS43_REG_GESTURE_EVENTS_0];
+    ret = read_sequence_registers(dev, TPS43_REG_GESTURE_EVENTS_0, touch_data,
+                                  sizeof(touch_data));
     if (ret < 0) {
-        LOG_ERR("Gesture events read error: %d", ret);
+        LOG_ERR("Touch data read error: %d", ret);
         goto done;
     }
 
-    // Read number of fingers currently touching so we can report touch state
-    uint8_t num_fingers = 0;
-    ret = tps43_i2c_read_reg8(dev, TPS43_REG_NUM_FINGERS, &num_fingers);
-    if (ret < 0) {
-        LOG_ERR("NUM_FINGERS read error: %d", ret);
-        goto done;
-    }
+    const uint8_t gestures_events[2] = {touch_data[0], touch_data[1]};
+    uint8_t num_fingers = touch_data[4];
+    int16_t rel_x = (int16_t)((touch_data[5] << 8) | touch_data[6]);
+    int16_t rel_y = (int16_t)((touch_data[7] << 8) | touch_data[8]);
 
     bool is_touching = (num_fingers > 0);
     if (is_touching != drv_data->touching) {
@@ -390,19 +400,6 @@ static void tps43_work_handler(struct k_work *work) {
         input_report_key(dev, INPUT_BTN_TOUCH, is_touching ? 1 : 0, false, K_FOREVER);
     }
 
-    // preread rel_x/rel_y because useful for many handlers
-    int16_t rel_x = 0, rel_y = 0;
-    ret = tps43_i2c_read_reg16(dev, TPS43_REG_REL_X, (uint16_t*)&rel_x);
-    if (ret < 0) {
-        LOG_ERR("REL_X read error: %d", ret);
-        goto done;
-    }
-    ret = tps43_i2c_read_reg16(dev, TPS43_REG_REL_Y, (uint16_t*)&rel_y);
-    if (ret < 0) {
-        LOG_ERR("REL_Y read error: %d", ret);
-        goto done;
-    }    
-    
     if (gestures_events[0] != 0 || gestures_events[1] != 0) {
 
         LOG_INF("Gestures: Single=0x%02X, Multi=0x%02X", gestures_events[0], gestures_events[1]);

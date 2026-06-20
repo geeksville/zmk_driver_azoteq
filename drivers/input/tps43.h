@@ -75,6 +75,7 @@ extern "C" {
 #define TPS43_REG_X_RESOLUTION              0x066E /* 2 bytes - X resolution */
 #define TPS43_REG_Y_RESOLUTION              0x0670 /* 2 bytes - Y resolution */
 
+#define TPS43_DEFAULT_READ_ADDRESS          0x0675 /* 2 bytes - default address used for reading if none is specified */
 /* XY configuration */
 // Read-write
 #define TPS43_REG_XY_CONFIG_0       0x0669  /* 1 byte */
