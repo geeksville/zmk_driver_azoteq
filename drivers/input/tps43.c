@@ -397,7 +397,7 @@ static void tps43_work_handler(struct k_work *work) {
     if (is_touching != drv_data->touching) {
         drv_data->touching = is_touching;
         LOG_INF("Touch state changed: %s", is_touching ? "down" : "up");
-        input_report_key(dev, INPUT_BTN_TOUCH, is_touching ? 1 : 0, false, K_FOREVER);
+        input_report_key(dev, INPUT_BTN_TOUCH, is_touching ? 1 : 0, true, K_FOREVER);
     }
 
     if (gestures_events[0] != 0 || gestures_events[1] != 0) {
