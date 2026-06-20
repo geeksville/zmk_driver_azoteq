@@ -375,6 +375,21 @@ static void tps43_work_handler(struct k_work *work) {
         goto done;
     }
 
+    // Read number of fingers currently touching so we can report touch state
+    uint8_t num_fingers = 0;
+    ret = tps43_i2c_read_reg8(dev, TPS43_REG_NUM_FINGERS, &num_fingers);
+    if (ret < 0) {
+        LOG_ERR("NUM_FINGERS read error: %d", ret);
+        goto done;
+    }
+
+    bool is_touching = (num_fingers > 0);
+    if (is_touching != drv_data->touching) {
+        drv_data->touching = is_touching;
+        LOG_INF("Touch state changed: %s", is_touching ? "down" : "up");
+        input_report_key(dev, INPUT_BTN_TOUCH, is_touching ? 1 : 0, false, K_FOREVER);
+    }
+
     // preread rel_x/rel_y because useful for many handlers
     int16_t rel_x = 0, rel_y = 0;
     ret = tps43_i2c_read_reg16(dev, TPS43_REG_REL_X, (uint16_t*)&rel_x);
@@ -431,12 +446,6 @@ static void tps43_work_handler(struct k_work *work) {
     if (rel_x != 0 || rel_y != 0) {
         // Handle three-finger swipes
         if (config->swipes) {
-            uint8_t num_fingers = 0;
-            ret = tps43_i2c_read_reg8(dev, TPS43_REG_NUM_FINGERS, &num_fingers);
-            if (ret < 0) {
-                LOG_ERR("NUM_FINGERS read error: %d", ret);
-                goto done;
-            }
             if (num_fingers == 3) {
                 LOG_INF("Three-finger movement - checking for swipe");
                 tps43_handle_swipe(dev, rel_x, rel_y);

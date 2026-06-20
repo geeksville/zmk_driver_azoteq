@@ -9,6 +9,7 @@ This driver should work with any IQS5XX-based trackpad (TPS43 or TPS65).
 ## Features
 
 - Trackpad movement.
+- Touch reporting: finger contact is reported as `INPUT_BTN_TOUCH` (1 when one or more fingers are on the pad, 0 when all fingers are lifted).
 - Single tap: registered as left click.
 - Two-finger tap: registered as right click.
 - Press and hold: registered as continuous left click (drag).

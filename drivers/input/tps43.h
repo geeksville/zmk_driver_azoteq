@@ -26,6 +26,16 @@ extern "C" {
 #define TPS43_REG_SYSTEM_INFO_0     0x000F  /* 1 byte - Status flags */
 #define TPS43_REG_SYSTEM_INFO_1     0x0010  /* 1 byte - Status flags */
 
+/* Touch data - main coordinates */
+// Read-only
+#define TPS43_REG_NUM_FINGERS       0x0011  /* 1 byte */
+#define TPS43_REG_REL_X             0x0012  /* 2 bytes - relative X movement */
+#define TPS43_REG_REL_Y             0x0014  /* 2 bytes - relative Y movement */
+#define TPS43_REG_ABS_X             0x0016  /* 2 bytes - absolute X position */
+#define TPS43_REG_ABS_Y             0x0018  /* 2 bytes - absolute Y position */
+#define TPS43_REG_TOUCH_STRENGTH    0x001A  /* 2 bytes */
+#define TPS43_REG_TOUCH_AREA        0x001C  /* 1 byte */
+
 
 /* System control and configuration */
 // Read-write
@@ -64,16 +74,6 @@ extern "C" {
 
 #define TPS43_REG_X_RESOLUTION              0x066E /* 2 bytes - X resolution */
 #define TPS43_REG_Y_RESOLUTION              0x0670 /* 2 bytes - Y resolution */
-
-/* Touch data - main coordinates */
-// Read-only
-#define TPS43_REG_NUM_FINGERS       0x0011  /* 1 byte */
-#define TPS43_REG_REL_X             0x0012  /* 2 bytes - relative X movement */
-#define TPS43_REG_REL_Y             0x0014  /* 2 bytes - relative Y movement */
-#define TPS43_REG_ABS_X             0x0016  /* 2 bytes - absolute X position */
-#define TPS43_REG_ABS_Y             0x0018  /* 2 bytes - absolute Y position */
-#define TPS43_REG_TOUCH_STRENGTH    0x001A  /* 2 bytes */
-#define TPS43_REG_TOUCH_AREA        0x001C  /* 1 byte */
 
 /* XY configuration */
 // Read-write
@@ -264,6 +264,7 @@ struct tps43_drv_data {
     bool initialized;
     bool drag_active;
     bool suspended;         
+    bool touching;          
 };
 
 int tps43_set_sleep(const struct device *dev, bool sleep);
