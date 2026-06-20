@@ -96,6 +96,14 @@ properties:
     required: false
     description: Enable automatic power management (suspend/resume)
 
+  idle-sleep:
+    type: boolean
+    required: false
+    description: |
+      If set, the trackpad is put to sleep when ZMK transitions to the IDLE
+      activity state. If not set (default), only the SLEEP activity state puts
+      the trackpad to sleep; IDLE leaves the trackpad active.
+
   single-tap:
     type: boolean
     required: false

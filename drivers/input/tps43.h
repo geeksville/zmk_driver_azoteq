@@ -218,6 +218,7 @@ struct tps43_config {
     int16_t zoom_sensitivity;
 
     bool enable_power_management;
+    bool idle_sleep;
 
     uint8_t filter_settings;
     int16_t filter_dynamic_bottom;

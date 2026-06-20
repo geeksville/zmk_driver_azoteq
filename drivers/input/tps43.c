@@ -1389,6 +1389,7 @@ static int tps43_init(const struct device *dev) {
         .scroll_sensitivity = DT_INST_PROP_OR(inst, scroll_sensitivity, 100),                        \
         .zoom_sensitivity = DT_INST_PROP_OR(inst, zoom_sensitivity, 100),                            \
         .enable_power_management = DT_INST_PROP_OR(inst, enable_power_management, true),             \
+        .idle_sleep = DT_INST_PROP_OR(inst, idle_sleep, false),                                      \
         .filter_settings = DT_INST_PROP_OR(inst, filter_settings, 0x0F),                             \
         .filter_dynamic_bottom = DT_INST_PROP_OR(inst, filter_dynamic_bottom, -1),                    \
         .filter_dynamic_lower = DT_INST_PROP_OR(inst, filter_dynamic_lower, -1),                     \

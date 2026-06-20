@@ -36,7 +36,8 @@ static const struct device *tps43_devs[] = {DT_FOREACH_STATUS_OKAY(azoteq_tps43,
 * 
 * This function is called when the keyboard activity state changes:
 * - ZMK_ACTIVITY_ACTIVE - keyboard is active, trackpad should be awakened
-* - ZMK_ACTIVITY_IDLE - keyboard is idle, trackpad is put to sleep
+ * - ZMK_ACTIVITY_IDLE - keyboard is idle, trackpad is put to sleep only if
+ *   the device has the `idle-sleep` property set
 * - ZMK_ACTIVITY_SLEEP - keyboard is sleeping, trackpad is put to sleep
 * 
 * @param eh Pointer to activity state change event
@@ -49,15 +50,23 @@ static int on_activity_state(const zmk_event_t *eh) {
         return 0;
     }
 
-    /* Put trackpad to sleep if state is not ACTIVE, otherwise wake it up */
-    bool should_sleep = (state_ev->state != ZMK_ACTIVITY_ACTIVE);
-    
-    LOG_INF("ZMK activity state change: %d -> trackpad %s", 
-            state_ev->state, should_sleep ? "sleep" : "active");
-    
     // Apply change to all TPS43 devices in the system
     for (size_t i = 0; i < ARRAY_SIZE(tps43_devs); i++) {
-        int ret = tps43_set_sleep(tps43_devs[i], should_sleep);
+        const struct device *dev = tps43_devs[i];
+        const struct tps43_config *config = dev->config;
+
+        /*
+         * Sleep when fully sleeping. For the IDLE state, only sleep if the
+         * device opted in via the `idle-sleep` property; otherwise stay active.
+         * Wake up whenever the keyboard is ACTIVE.
+         */
+        bool should_sleep = (state_ev->state == ZMK_ACTIVITY_SLEEP) ||
+                            (state_ev->state == ZMK_ACTIVITY_IDLE && config->idle_sleep);
+
+        LOG_INF("ZMK activity state change: %d -> trackpad %zu %s",
+                state_ev->state, i, should_sleep ? "sleep" : "active");
+
+        int ret = tps43_set_sleep(dev, should_sleep);
         if (ret != 0) {
             LOG_WRN("Trackpad power management error %zu: %d", i, ret);
         }

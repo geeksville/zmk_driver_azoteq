@@ -200,15 +200,30 @@ The trackpad automatically enters sleep mode when the keyboard transitions to id
 
 **How it works:**
 - The `tps43_idle_sleeper.c` module subscribes to ZMK `zmk_activity_state_changed` events
-- When ZMK transitions to `IDLE` or `SLEEP` state, the trackpad enters sleep mode
+- When ZMK transitions to `SLEEP` state, the trackpad enters sleep mode
+- When ZMK transitions to `IDLE` state, the trackpad enters sleep mode only if the `idle-sleep` property is set; otherwise it stays active
 - When returning to `ACTIVE` state, the trackpad wakes up
 
 **ZMK States:**
 - `ZMK_ACTIVITY_ACTIVE` - keyboard active, trackpad operational
-- `ZMK_ACTIVITY_IDLE` - keyboard in idle mode, trackpad in sleep
+- `ZMK_ACTIVITY_IDLE` - keyboard in idle mode, trackpad in sleep only if `idle-sleep` is set
 - `ZMK_ACTIVITY_SLEEP` - keyboard in sleep mode, trackpad in sleep
 
 **Important:** This mechanism only works if `enable-power-management` is enabled.
+
+The optional `idle-sleep` property controls whether the IDLE state also puts the
+trackpad to sleep:
+
+```
+&i2c0 {
+    tps43_trackpad: trackpad@74 {
+        compatible = "azoteq,tps43";
+        /* ... */
+        enable-power-management;
+        idle-sleep;   /* also sleep the trackpad while ZMK is idle */
+    };
+};
+```
 
 ### Technical Details
 
