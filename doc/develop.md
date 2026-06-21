@@ -1,5 +1,29 @@
 Useful tips for driver developers...
 
+## Open issues
+
+## Fixed issues
+
+I sometimes see this in the log:
+
+[00:21:23.906,494] [1;31m<err> i2c_nrfx_twim: Error 0x0BAE0001 occurred for message 0[0m
+
+I slowed i2c down from 400kHz to 100kHz and the problem was still present:
+
+[00:03:48.676,147] [1;31m<err> i2c_nrfx_twim: Error 0x0BAE0001 occurred for message 0[0m
+[00:03:48.676,177] [1;31m<err> tps43: Touch data read error: -5[0m
+[00:03:48.683,410] [1;31m<err> i2c_nrfx_twim: Error 0x0BAE0001 occurred for message 0[0m
+[00:03:48.683,441] [1;31m<err> tps43: Touch data read error: -5[0m
+[00:03:48.697,235] [0m<inf> tps43: Sending movement: dx=0, dy=1[0m
+[00:03:48.703,369] [0m<inf> tps43: Touch state changed: up[0m
+[00:03:48.704,010] [1;31m<err> i2c_nrfx_twim: Error 0x0BAE0001 occurred for message 0[0m
+[00:03:48.704,040] [1;31m<err> tps43: Touch data read error: -5[0m
+[00:03:51.975,036] [1;31m<err> i2c_nrfx_twim: Error 0x0BAE0001 occurred for message 0[0m
+[00:03:51.975,067] [1;31m<err> tps43: Touch data read error: -5[0m
+[00:03:59.645,477] [1;31m<err> i2c_nrfx_twim: Error 0x0BAE0001 occurred for message 0[0m
+
+root cause seems to be incorrectly applying sleep wake code while zmk is in idle state.  fixed.
+
 ## Default register values
 
 [00:00:01.020,904] [0m<inf> tps43: Dumping TPS43 registers[0m

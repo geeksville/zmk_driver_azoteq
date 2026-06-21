@@ -234,8 +234,8 @@ static int tps43_set_suspend_internal(const struct device *dev, bool suspend, bo
     const struct tps43_config *config = dev->config;
     int ret = 0;
 
-    // If power management is disabled, do nothing
-    if (!config->enable_power_management) {
+    // If power management is disabled, or device is already in the desired state, do nothing
+    if (drv_data->suspended == suspend || !config->enable_power_management) {
         return 0;
     }
 
