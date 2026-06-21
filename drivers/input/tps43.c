@@ -754,6 +754,37 @@ static int tps43_configure_device(const struct device *dev) {
         LOG_INF("Zoom consecutive distance set: %u px", (uint16_t)config->zoom_consecutive_distance);
     }
 
+    // tap/hold configuration (only if set in DT)
+    if (config->tap_time != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_TAP_TIME,
+                                    (uint16_t)config->tap_time);
+        if (ret != 0) {
+            LOG_WRN("Tap time write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Tap time set: %u ms", (uint16_t)config->tap_time);
+    }
+
+    if (config->tap_distance != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_TAP_DISTANCE,
+                                    (uint16_t)config->tap_distance);
+        if (ret != 0) {
+            LOG_WRN("Tap distance write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Tap distance set: %u px", (uint16_t)config->tap_distance);
+    }
+
+    if (config->hold_time != -1) {
+        ret = tps43_i2c_write_reg16(dev, TPS43_REG_HOLD_TIME,
+                                    (uint16_t)config->hold_time);
+        if (ret != 0) {
+            LOG_WRN("Hold time write error: %d", ret);
+            return ret;
+        }
+        LOG_INF("Hold time set: %u ms", (uint16_t)config->hold_time);
+    }
+
     // ATI configuration (only if set in DT)
     if (config->ati_target != -1) {
         ret = tps43_i2c_write_reg16(dev, TPS43_REG_ATI_TARGET,
@@ -1427,6 +1458,9 @@ static int tps43_init(const struct device *dev) {
         .timeout_idle = DT_INST_PROP_OR(inst, timeout_idle, -1),                                     \
         .timeout_lp1 = DT_INST_PROP_OR(inst, timeout_lp1, -1),                                       \
         .ref_update_time = DT_INST_PROP_OR(inst, ref_update_time, -1),                               \
+        .tap_time = DT_INST_PROP_OR(inst, tap_time, -1),                                             \
+        .tap_distance = DT_INST_PROP_OR(inst, tap_distance, -1),                                     \
+        .hold_time = DT_INST_PROP_OR(inst, hold_time, -1),                                           \
     };                                                                                               \
                                                                                                      \
     DEVICE_DT_INST_DEFINE(inst, tps43_init, NULL, &tps43_##inst##_drvdata, &tps43_##inst##_config,   \

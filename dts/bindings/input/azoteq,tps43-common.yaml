@@ -379,3 +379,30 @@ properties:
       Controls how frequently the reference level is updated.
       Written to the REF_UPDATE_TIME register (0x0588).
       Only written if explicitly set.
+
+  tap-time:
+    type: int
+    required: false
+    description: |
+      Maximum time for a tap gesture in milliseconds (2 bytes).
+      Sets the maximum duration a finger can be in contact for a tap to register.
+      Written to the TAP_TIME register (0x06B9).
+      Only written if explicitly set.
+
+  tap-distance:
+    type: int
+    required: false
+    description: |
+      Maximum distance for a tap gesture in pixels (2 bytes).
+      Sets the maximum finger movement allowed during a tap gesture.
+      Written to the TAP_DISTANCE register (0x06BB).
+      Only written if explicitly set.
+
+  hold-time:
+    type: int
+    required: false
+    description: |
+      Minimum time for a press-and-hold gesture in milliseconds (2 bytes).
+      Sets the minimum duration a finger must be held to trigger a hold gesture.
+      Written to the HOLD_TIME register (0x06BD).
+      Only written if explicitly set.

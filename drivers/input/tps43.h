@@ -253,6 +253,9 @@ struct tps43_config {
     int16_t timeout_idle;
     int16_t timeout_lp1;
     int16_t ref_update_time;
+    int16_t tap_time;
+    int16_t tap_distance;
+    int16_t hold_time;
 };
 
 struct tps43_drv_data {
