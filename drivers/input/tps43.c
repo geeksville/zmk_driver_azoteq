@@ -424,12 +424,6 @@ static void tps43_work_handler(struct k_work *work) {
             is_drag_active = true;
             input_report_key(dev, INPUT_BTN_0, 1, true, K_FOREVER); 
         }
-        if ((!(gestures_events[0] & TPS43_PRESS_AND_HOLD)) && (is_drag_active)) {
-            LOG_INF("Press and hold end detected - RELEASE (RELEASE LEFT BUTTON)");
-            // release drag flag and release left mouse button
-            is_drag_active = false;
-            input_report_key(dev, INPUT_BTN_0, 0, true, K_FOREVER);   // release + sync
-        }
         if (gestures_events[1] & TPS43_SCROLL) {
             // set scroll flag for processing in tp_movement block
             is_scroll_active = true;
@@ -438,6 +432,14 @@ static void tps43_work_handler(struct k_work *work) {
             // set zoom flag for processing in tp_movement block
             is_zoom_active = true;
         }
+    }
+
+    // Detect release of a 'press and hold' left press
+    if ((!(gestures_events[0] & TPS43_PRESS_AND_HOLD)) && is_drag_active) {
+        LOG_INF("Press and hold end detected - RELEASE (RELEASE LEFT BUTTON)");
+        // release drag flag and release left mouse button
+        is_drag_active = false;
+        input_report_key(dev, INPUT_BTN_0, 0, true, K_FOREVER);   // release + sync
     }
 
     if (rel_x != 0 || rel_y != 0) {
