@@ -443,15 +443,12 @@ static void tps43_work_handler(struct k_work *work) {
     }
 
     if (rel_x != 0 || rel_y != 0) {
-        // Handle three-finger swipes
-        if (config->swipes) {
-            if (num_fingers == 3) {
-                LOG_INF("Three-finger movement - checking for swipe");
+        if (num_fingers == 3) {
+            LOG_INF("Three-finger movement - checking for swipe");
+            if (config->swipes) {
                 tps43_handle_swipe(dev, rel_x, rel_y);
             }
-        }
-
-        if (is_scroll_active) {
+        } else if (is_scroll_active) {
             // Scroll processing: keep only dominant axis
             if (abs(rel_x) > abs(rel_y)) {
                 // Horizontal scroll
